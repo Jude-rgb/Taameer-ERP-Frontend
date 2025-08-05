@@ -7,6 +7,7 @@ interface ThemeState {
   toggleTheme: () => void;
   toggleRTL: () => void;
   setTheme: (theme: 'light' | 'dark') => void;
+  setRTL: (isRTL: boolean) => void;
 }
 
 export const useThemeStore = create<ThemeState>()(
@@ -42,6 +43,13 @@ export const useThemeStore = create<ThemeState>()(
         } else {
           document.documentElement.classList.remove('dark');
         }
+      },
+      setRTL: (isRTL: boolean) => {
+        set({ isRTL });
+        
+        // Update document direction
+        document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
+        document.documentElement.setAttribute('dir', isRTL ? 'rtl' : 'ltr');
       },
     }),
     {

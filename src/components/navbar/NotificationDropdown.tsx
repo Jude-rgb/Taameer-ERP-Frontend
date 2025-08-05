@@ -1,4 +1,5 @@
-import { Bell, Check, X } from 'lucide-react';
+import { useState } from 'react';
+import { Bell, Check, X, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -9,10 +10,12 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import { NotificationsModal } from '@/components/notifications/NotificationsModal';
 import { useNotificationStore } from '@/store/useNotificationStore';
 import { formatDistanceToNow } from 'date-fns';
 
 export const NotificationDropdown = () => {
+  const [notificationsModalOpen, setNotificationsModalOpen] = useState(false);
   const { notifications, unreadCount, markAsRead, markAllAsRead, removeNotification } = useNotificationStore();
 
   const getNotificationIcon = (type: string) => {
@@ -42,34 +45,46 @@ export const NotificationDropdown = () => {
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="w-4 h-4" />
-          {unreadCount > 0 && (
-            <Badge
-              variant="destructive"
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-            >
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </Badge>
-          )}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-80 p-0" align="end">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="font-semibold">Notifications</h3>
-          {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={markAllAsRead}
-              className="text-xs"
-            >
-              Mark all read
-            </Button>
-          )}
-        </div>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="relative">
+            <Bell className="w-4 h-4" />
+            {unreadCount > 0 && (
+              <Badge
+                variant="destructive"
+                className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+              >
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </Badge>
+            )}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-80 p-0" align="end">
+          <div className="flex items-center justify-between p-4 border-b">
+            <h3 className="font-semibold">Notifications</h3>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setNotificationsModalOpen(true)}
+                className="text-xs"
+              >
+                <Eye className="w-3 h-3 mr-1" />
+                View All
+              </Button>
+              {unreadCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={markAllAsRead}
+                  className="text-xs"
+                >
+                  Mark all read
+                </Button>
+              )}
+            </div>
+          </div>
         
         <ScrollArea className="h-[400px]">
           {notifications.length === 0 ? (
@@ -147,5 +162,10 @@ export const NotificationDropdown = () => {
         </ScrollArea>
       </DropdownMenuContent>
     </DropdownMenu>
-  );
+
+    <NotificationsModal 
+      open={notificationsModalOpen} 
+      onOpenChange={setNotificationsModalOpen} 
+    />
+  </>);
 };
