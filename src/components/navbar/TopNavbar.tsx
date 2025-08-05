@@ -29,9 +29,7 @@ export const TopNavbar = () => {
     <>
       <header className="h-16 border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="flex items-center justify-between h-full px-6">
-          <div className="flex items-center gap-4">
-            <SidebarTrigger />
-            
+         <div className="flex items-center gap-4">
             {/* Company Info */}
             <div className="hidden md:block">
               <h2 className="font-semibold text-foreground">{settings.companyName}</h2>

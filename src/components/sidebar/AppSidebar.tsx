@@ -66,6 +66,9 @@ export function AppSidebar() {
   const isGroupActive = (items: { url: string; }[]) => 
     items.some(item => currentPath.startsWith(item.url));
   
+  const isSubItemActive = (items: { url: string; }[]) =>
+    items.some(item => currentPath === item.url);
+  
   const toggleGroup = (title: string) => {
     setOpenGroups(prev => 
       prev.includes(title) 
@@ -110,34 +113,30 @@ export function AppSidebar() {
         }}
       >
         <SidebarHeader className="p-4 border-b border-glass-border">
-          <div className="flex items-center justify-between">
+          <motion.div 
+            className="flex items-center gap-3"
+            whileHover={{ scale: 1.02 }}
+            transition={{ duration: 0.2 }}
+          >
             <motion.div 
-              className="flex items-center gap-3"
-              whileHover={{ scale: 1.02 }}
-              transition={{ duration: 0.2 }}
+              className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg"
+              whileHover={{ rotate: 5 }}
+              transition={{ duration: 0.3 }}
             >
-              <motion.div 
-                className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg"
-                whileHover={{ rotate: 5 }}
-                transition={{ duration: 0.3 }}
-              >
-                <Building2 className="w-6 h-6 text-white" />
-              </motion.div>
-              {open && (
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3, delay: 0.1 }}
-                >
-                  <h2 className="font-bold text-lg text-sidebar-foreground">{settings.companyName}</h2>
-                  <p className="text-xs text-sidebar-foreground/70">{settings.companySlogan}</p>
-                </motion.div>
-              )}
+              <Building2 className="w-6 h-6 text-white" />
             </motion.div>
-            
-            <SidebarTrigger className="w-8 h-8 hover:bg-sidebar-accent rounded-lg transition-colors" />
-          </div>
+            {open && (
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+              >
+                <h2 className="font-bold text-lg text-sidebar-foreground">{settings.companyName}</h2>
+                <p className="text-xs text-sidebar-foreground/70">{settings.companySlogan}</p>
+              </motion.div>
+            )}
+          </motion.div>
         </SidebarHeader>
 
         <SidebarContent className="p-2">
@@ -162,22 +161,22 @@ export function AppSidebar() {
                               whileHover={{ scale: 1.02 }}
                               whileTap={{ scale: 0.98 }}
                             >
-                              <SidebarMenuButton 
+                               <SidebarMenuButton 
                                 className={cn(
                                   "w-full justify-between rounded-xl h-12 transition-all duration-300 hover:bg-sidebar-accent group",
-                                  isGroupActive(item.items) && "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg",
+                                  (isGroupActive(item.items) || isSubItemActive(item.items)) && "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg",
                                   !open && "justify-center"
                                 )}
                               >
-                                <div className="flex items-center gap-3">
-                                  <item.icon className={cn(
-                                    "w-5 h-5 transition-colors",
-                                    isGroupActive(item.items) ? "text-white" : "text-sidebar-foreground"
-                                  )} />
-                                  {open && (
-                                    <span className="font-medium">{item.title}</span>
-                                  )}
-                                </div>
+                                 <div className="flex items-center gap-3">
+                                   <item.icon className={cn(
+                                     "w-5 h-5 transition-colors",
+                                     (isGroupActive(item.items) || isSubItemActive(item.items)) ? "text-white" : "text-sidebar-foreground"
+                                   )} />
+                                   {open && (
+                                     <span className="font-medium">{item.title}</span>
+                                   )}
+                                 </div>
                                 {open && (
                                   <ChevronDown className={cn(
                                     "w-4 h-4 transition-transform duration-300",

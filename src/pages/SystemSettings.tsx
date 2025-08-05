@@ -45,6 +45,7 @@ export const SystemSettings = () => {
     toast({
       title: "Settings Updated",
       description: "System settings have been saved successfully.",
+      variant: "success"
     });
   };
 
