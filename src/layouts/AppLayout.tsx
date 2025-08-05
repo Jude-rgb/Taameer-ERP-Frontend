@@ -30,13 +30,15 @@ export const AppLayout = () => {
 
   return (
     <SidebarProvider>
-      <div className={`min-h-screen flex w-full bg-background ${isRTL ? 'flex-row-reverse' : ''}`}>
-        <AppSidebar />
+      <div className={`min-h-screen flex w-full bg-gradient-to-br from-background via-muted/20 to-background ${isRTL ? 'flex-row-reverse' : ''}`}>
+        <div className={`${isRTL ? 'order-2' : 'order-1'}`}>
+          <AppSidebar />
+        </div>
         
-        <div className="flex-1 flex flex-col">
+        <div className={`flex-1 flex flex-col ${isRTL ? 'order-1' : 'order-2'}`}>
           <TopNavbar />
           
-          <main className="flex-1 p-6 overflow-auto">
+          <main className="flex-1 overflow-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

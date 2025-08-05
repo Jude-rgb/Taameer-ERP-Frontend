@@ -78,6 +78,10 @@ export default {
 					DEFAULT: 'hsl(var(--info))',
 					foreground: 'hsl(var(--info-foreground))'
 				},
+				'accent-blue': 'hsl(var(--accent-blue))',
+				'accent-orange': 'hsl(var(--accent-orange))',
+				'accent-teal': 'hsl(var(--accent-teal))',
+				'accent-pink': 'hsl(var(--accent-pink))',
 				chart: {
 					'1': 'hsl(var(--chart-1))',
 					'2': 'hsl(var(--chart-2))',
@@ -90,14 +94,31 @@ export default {
 				'gradient-primary': 'var(--gradient-primary)',
 				'gradient-success': 'var(--gradient-success)',
 				'gradient-warning': 'var(--gradient-warning)',
-				'gradient-card': 'var(--gradient-card)'
+				'gradient-blue': 'var(--gradient-blue)',
+				'gradient-orange': 'var(--gradient-orange)',
+				'gradient-teal': 'var(--gradient-teal)',
+				'gradient-pink': 'var(--gradient-pink)',
+				'gradient-card': 'var(--gradient-card)',
+				'gradient-glass': 'var(--gradient-glass)'
 			},
 			boxShadow: {
 				'glow': 'var(--shadow-glow)',
+				'elegant': 'var(--shadow-elegant)',
+				'card': 'var(--shadow-card)',
+				'glass': 'var(--shadow-glass)',
 				'custom-sm': 'var(--shadow-sm)',
 				'custom-md': 'var(--shadow-md)',
 				'custom-lg': 'var(--shadow-lg)',
 				'custom-xl': 'var(--shadow-xl)'
+			},
+			backdropBlur: {
+				'glass': '20px'
+			},
+			backgroundColor: {
+				'glass': 'var(--glass-background)',
+			},
+			borderColor: {
+				'glass': 'var(--glass-border)',
 			},
 			transitionTimingFunction: {
 				'smooth': 'cubic-bezier(0.4, 0, 0.2, 1)',
