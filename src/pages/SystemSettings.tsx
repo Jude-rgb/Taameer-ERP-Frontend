@@ -17,19 +17,7 @@ export const SystemSettings = () => {
   const { settings, updateSettings } = useSystemStore();
   const { setRTL } = useThemeStore();
   const { toast } = useToast();
-  const [tempSettings, setTempSettings] = useState(settings);
-
-  const handleSave = () => {
-    updateSettings(tempSettings);
-    if (tempSettings.language !== settings.language) {
-      setRTL(tempSettings.language === 'ar');
-    }
-    toast({
-      title: "Settings Updated",
-      description: "System settings have been saved successfully.",
-    });
-  };
-
+  
   const defaultModules = [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'inventory/products', label: 'Products' },
@@ -44,12 +32,28 @@ export const SystemSettings = () => {
     { id: 'settings', label: 'System Settings' }
   ];
 
+  const [tempSettings, setTempSettings] = useState({
+    ...settings,
+    enabledModules: settings.enabledModules || defaultModules.map(m => m.id)
+  });
+
+  const handleSave = () => {
+    updateSettings(tempSettings);
+    if (tempSettings.language !== settings.language) {
+      setRTL(tempSettings.language === 'ar');
+    }
+    toast({
+      title: "Settings Updated",
+      description: "System settings have been saved successfully.",
+    });
+  };
+
   const handleModuleToggle = (moduleId: string, enabled: boolean) => {
     setTempSettings(prev => ({
       ...prev,
       enabledModules: enabled 
-        ? [...prev.enabledModules, moduleId]
-        : prev.enabledModules.filter(m => m !== moduleId)
+        ? [...(prev.enabledModules || []), moduleId]
+        : (prev.enabledModules || []).filter(m => m !== moduleId)
     }));
   };
 
@@ -409,7 +413,7 @@ export const SystemSettings = () => {
                       </div>
                     </div>
                     <Switch
-                      checked={tempSettings.enabledModules.includes(module.id)}
+                      checked={tempSettings.enabledModules?.includes(module.id) || false}
                       onCheckedChange={(checked) => handleModuleToggle(module.id, checked)}
                     />
                   </motion.div>
