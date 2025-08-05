@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Package, FileText, Receipt, Truck, Users, BarChart3, Settings, ShoppingCart, ClipboardList, ChevronDown, Building2 } from 'lucide-react';
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, useSidebar, SidebarHeader } from '@/components/ui/sidebar';
+import { LayoutDashboard, Package, FileText, Receipt, Truck, Users, BarChart3, Settings, ShoppingCart, ClipboardList, ChevronDown, Building2, Menu, X } from 'lucide-react';
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, useSidebar, SidebarHeader, SidebarTrigger } from '@/components/ui/sidebar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useSystemStore } from '@/store/useSystemStore';
 import { cn } from '@/lib/utils';
 const menuItems = [{
   title: 'Dashboard',
@@ -53,7 +56,8 @@ const menuItems = [{
   icon: Settings
 }];
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { state, open, setOpen } = useSidebar();
+  const { settings } = useSystemStore();
   const location = useLocation();
   const currentPath = location.pathname;
   const [openGroups, setOpenGroups] = useState<string[]>(['Inventory', 'Sales']);
@@ -70,6 +74,23 @@ export function AppSidebar() {
     );
   };
 
+  const SidebarTooltip = ({ children, content, side = "right" }: { children: React.ReactNode; content: string; side?: "top" | "right" | "bottom" | "left" }) => {
+    if (open) return <>{children}</>;
+    
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            {children}
+          </TooltipTrigger>
+          <TooltipContent side={side} className="bg-popover border-border">
+            <p>{content}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  };
+
   return (
     <motion.div
       initial={{ x: -300, opacity: 0 }}
@@ -79,8 +100,8 @@ export function AppSidebar() {
     >
       <Sidebar 
         className={cn(
-          "backdrop-blur-lg bg-glass-background border-glass-border shadow-glass transition-all duration-500 ease-in-out",
-          state === "collapsed" ? "w-16" : "w-64"
+          "backdrop-blur-lg bg-glass-background border-glass-border shadow-glass transition-all duration-300 ease-in-out",
+          !open ? "w-16" : "w-64"
         )}
         style={{
           background: "var(--glass-background)",
@@ -89,134 +110,146 @@ export function AppSidebar() {
         }}
       >
         <SidebarHeader className="p-4 border-b border-glass-border">
-          <motion.div 
-            className="flex items-center gap-3"
-            whileHover={{ scale: 1.02 }}
-            transition={{ duration: 0.2 }}
-          >
+          <div className="flex items-center justify-between">
             <motion.div 
-              className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg"
-              whileHover={{ rotate: 5 }}
-              transition={{ duration: 0.3 }}
+              className="flex items-center gap-3"
+              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.2 }}
             >
-              <Building2 className="w-6 h-6 text-white" />
-            </motion.div>
-            {state !== "collapsed" && (
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3, delay: 0.1 }}
+              <motion.div 
+                className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg"
+                whileHover={{ rotate: 5 }}
+                transition={{ duration: 0.3 }}
               >
-                <h2 className="font-bold text-lg text-sidebar-foreground">InvoicePro</h2>
-                <p className="text-xs text-sidebar-foreground/70">Smart Business Solutions</p>
+                <Building2 className="w-6 h-6 text-white" />
               </motion.div>
-            )}
-          </motion.div>
+              {open && (
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.3, delay: 0.1 }}
+                >
+                  <h2 className="font-bold text-lg text-sidebar-foreground">{settings.companyName}</h2>
+                  <p className="text-xs text-sidebar-foreground/70">{settings.companySlogan}</p>
+                </motion.div>
+              )}
+            </motion.div>
+            
+            <SidebarTrigger className="w-8 h-8 hover:bg-sidebar-accent rounded-lg transition-colors" />
+          </div>
         </SidebarHeader>
 
         <SidebarContent className="p-2">
           <SidebarGroup>
-            <SidebarGroupLabel className="text-xs uppercase tracking-wider text-sidebar-foreground/60 px-3 mb-2">
-              Navigation
-            </SidebarGroupLabel>
+            {open && (
+              <SidebarGroupLabel className="text-xs uppercase tracking-wider text-sidebar-foreground/60 px-3 mb-2">
+                Navigation
+              </SidebarGroupLabel>
+            )}
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1">
                 {menuItems.map((item, index) => (
                   <SidebarMenuItem key={item.title}>
                     {item.items ? (
-                      <Collapsible 
-                        open={openGroups.includes(item.title)} 
-                        onOpenChange={() => toggleGroup(item.title)}
-                      >
-                        <CollapsibleTrigger asChild>
-                          <motion.div
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                          >
-                            <SidebarMenuButton 
-                              className={cn(
-                                "w-full justify-between rounded-xl h-12 transition-all duration-300 hover:bg-sidebar-accent group",
-                                isGroupActive(item.items) && "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg"
-                              )}
-                            >
-                              <div className="flex items-center gap-3">
-                                <item.icon className={cn(
-                                  "w-5 h-5 transition-colors",
-                                  isGroupActive(item.items) ? "text-white" : "text-sidebar-foreground"
-                                )} />
-                                {state !== "collapsed" && (
-                                  <span className="font-medium">{item.title}</span>
-                                )}
-                              </div>
-                              {state !== "collapsed" && (
-                                <ChevronDown className={cn(
-                                  "w-4 h-4 transition-transform duration-300",
-                                  openGroups.includes(item.title) && "rotate-180"
-                                )} />
-                              )}
-                            </SidebarMenuButton>
-                          </motion.div>
-                        </CollapsibleTrigger>
-                        {state !== "collapsed" && (
-                          <CollapsibleContent>
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: "auto" }}
-                              exit={{ opacity: 0, height: 0 }}
-                              transition={{ duration: 0.3 }}
-                            >
-                              <SidebarMenuSub className="ml-4 mt-2 space-y-1">
-                                {item.items.map((subItem) => (
-                                  <SidebarMenuSubItem key={subItem.url}>
-                                    <motion.div
-                                      whileHover={{ x: 4 }}
-                                      transition={{ duration: 0.2 }}
-                                    >
-                                      <SidebarMenuSubButton 
-                                        asChild 
-                                        isActive={isActive(subItem.url)}
-                                        className="rounded-lg h-10 hover:bg-sidebar-accent/50"
-                                      >
-                                        <NavLink to={subItem.url}>
-                                          <span className="text-sm">{subItem.title}</span>
-                                        </NavLink>
-                                      </SidebarMenuSubButton>
-                                    </motion.div>
-                                  </SidebarMenuSubItem>
-                                ))}
-                              </SidebarMenuSub>
-                            </motion.div>
-                          </CollapsibleContent>
-                        )}
-                      </Collapsible>
-                    ) : (
-                      <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.3, delay: index * 0.1 }}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <SidebarMenuButton 
-                          asChild 
-                          isActive={isActive(item.url!)}
-                          className={cn(
-                            "rounded-xl h-12 transition-all duration-300 hover:bg-sidebar-accent group",
-                            isActive(item.url!) && "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg"
-                          )}
+                      <SidebarTooltip content={item.title}>
+                        <Collapsible 
+                          open={open && openGroups.includes(item.title)} 
+                          onOpenChange={() => open && toggleGroup(item.title)}
                         >
-                          <NavLink to={item.url!}>
-                            <item.icon className={cn(
-                              "w-5 h-5 transition-colors",
-                              isActive(item.url!) ? "text-white" : "text-sidebar-foreground"
-                            )} />
-                            {state !== "collapsed" && (
-                              <span className="font-medium">{item.title}</span>
+                          <CollapsibleTrigger asChild>
+                            <motion.div
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              <SidebarMenuButton 
+                                className={cn(
+                                  "w-full justify-between rounded-xl h-12 transition-all duration-300 hover:bg-sidebar-accent group",
+                                  isGroupActive(item.items) && "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg",
+                                  !open && "justify-center"
+                                )}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <item.icon className={cn(
+                                    "w-5 h-5 transition-colors",
+                                    isGroupActive(item.items) ? "text-white" : "text-sidebar-foreground"
+                                  )} />
+                                  {open && (
+                                    <span className="font-medium">{item.title}</span>
+                                  )}
+                                </div>
+                                {open && (
+                                  <ChevronDown className={cn(
+                                    "w-4 h-4 transition-transform duration-300",
+                                    openGroups.includes(item.title) && "rotate-180"
+                                  )} />
+                                )}
+                              </SidebarMenuButton>
+                            </motion.div>
+                          </CollapsibleTrigger>
+                          {open && (
+                            <CollapsibleContent>
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.3 }}
+                              >
+                                <SidebarMenuSub className="ml-4 mt-2 space-y-1">
+                                  {item.items.map((subItem) => (
+                                    <SidebarMenuSubItem key={subItem.url}>
+                                      <motion.div
+                                        whileHover={{ x: 4 }}
+                                        transition={{ duration: 0.2 }}
+                                      >
+                                        <SidebarMenuSubButton 
+                                          asChild 
+                                          isActive={isActive(subItem.url)}
+                                          className="rounded-lg h-10 hover:bg-sidebar-accent/50"
+                                        >
+                                          <NavLink to={subItem.url}>
+                                            <span className="text-sm">{subItem.title}</span>
+                                          </NavLink>
+                                        </SidebarMenuSubButton>
+                                      </motion.div>
+                                    </SidebarMenuSubItem>
+                                  ))}
+                                </SidebarMenuSub>
+                              </motion.div>
+                            </CollapsibleContent>
+                          )}
+                        </Collapsible>
+                      </SidebarTooltip>
+                    ) : (
+                      <SidebarTooltip content={item.title}>
+                        <motion.div
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.3, delay: index * 0.1 }}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <SidebarMenuButton 
+                            asChild 
+                            isActive={isActive(item.url!)}
+                            className={cn(
+                              "rounded-xl h-12 transition-all duration-300 hover:bg-sidebar-accent group",
+                              isActive(item.url!) && "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg",
+                              !open && "justify-center"
                             )}
-                          </NavLink>
-                        </SidebarMenuButton>
-                      </motion.div>
+                          >
+                            <NavLink to={item.url!}>
+                              <item.icon className={cn(
+                                "w-5 h-5 transition-colors",
+                                isActive(item.url!) ? "text-white" : "text-sidebar-foreground"
+                              )} />
+                              {open && (
+                                <span className="font-medium">{item.title}</span>
+                              )}
+                            </NavLink>
+                          </SidebarMenuButton>
+                        </motion.div>
+                      </SidebarTooltip>
                     )}
                   </SidebarMenuItem>
                 ))}

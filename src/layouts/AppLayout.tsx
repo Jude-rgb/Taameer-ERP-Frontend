@@ -45,7 +45,9 @@ export const AppLayout = () => {
               transition={{ duration: 0.3 }}
               className="h-full"
             >
-              <Outlet />
+              <div className="p-6">
+                <Outlet />
+              </div>
             </motion.div>
           </main>
         </div>
