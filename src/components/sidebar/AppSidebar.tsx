@@ -103,27 +103,22 @@ export function AppSidebar() {
     >
       <Sidebar 
         className={cn(
-          "backdrop-blur-lg bg-glass-background border-glass-border shadow-glass transition-all duration-300 ease-in-out",
+          "border-r bg-background transition-all duration-300 ease-in-out",
           !open ? "w-16" : "w-64"
         )}
-        style={{
-          background: "var(--glass-background)",
-          backdropFilter: "blur(20px)",
-          borderRight: "1px solid var(--glass-border)"
-        }}
       >
-        <SidebarHeader className="p-4 border-b border-glass-border">
+        <SidebarHeader className="p-4 border-b">
           <motion.div 
             className="flex items-center gap-3"
             whileHover={{ scale: 1.02 }}
             transition={{ duration: 0.2 }}
           >
             <motion.div 
-              className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg"
+              className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center"
               whileHover={{ rotate: 5 }}
               transition={{ duration: 0.3 }}
             >
-              <Building2 className="w-6 h-6 text-white" />
+              <Building2 className="w-5 h-5 text-primary-foreground" />
             </motion.div>
             {open && (
               <motion.div
@@ -132,8 +127,7 @@ export function AppSidebar() {
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3, delay: 0.1 }}
               >
-                <h2 className="font-bold text-lg text-sidebar-foreground">{settings.companyName}</h2>
-                <p className="text-xs text-sidebar-foreground/70">{settings.companySlogan}</p>
+                <h2 className="font-semibold text-sm text-foreground">{settings.companyName}</h2>
               </motion.div>
             )}
           </motion.div>
@@ -141,11 +135,6 @@ export function AppSidebar() {
 
         <SidebarContent className="p-2">
           <SidebarGroup>
-            {open && (
-              <SidebarGroupLabel className="text-xs uppercase tracking-wider text-sidebar-foreground/60 px-3 mb-2">
-                Navigation
-              </SidebarGroupLabel>
-            )}
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1">
                 {menuItems.map((item, index) => (
@@ -163,18 +152,18 @@ export function AppSidebar() {
                             >
                                <SidebarMenuButton 
                                 className={cn(
-                                  "w-full justify-between rounded-xl h-12 transition-all duration-300 hover:bg-sidebar-accent group",
-                                  (isGroupActive(item.items) || isSubItemActive(item.items)) && "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg",
-                                  !open && "justify-center"
+                                  "w-full justify-between rounded-lg h-10 transition-all duration-200 hover:bg-accent",
+                                  (isGroupActive(item.items) || isSubItemActive(item.items)) && "bg-primary text-primary-foreground",
+                                  !open && "justify-center px-2"
                                 )}
                               >
                                  <div className="flex items-center gap-3">
                                    <item.icon className={cn(
                                      "w-5 h-5 transition-colors",
-                                     (isGroupActive(item.items) || isSubItemActive(item.items)) ? "text-white" : "text-sidebar-foreground"
+                                     (isGroupActive(item.items) || isSubItemActive(item.items)) ? "text-primary-foreground" : "text-muted-foreground"
                                    )} />
                                    {open && (
-                                     <span className="font-medium">{item.title}</span>
+                                     <span className="text-sm font-medium">{item.title}</span>
                                    )}
                                  </div>
                                 {open && (
@@ -194,20 +183,20 @@ export function AppSidebar() {
                                 exit={{ opacity: 0, height: 0 }}
                                 transition={{ duration: 0.3 }}
                               >
-                                <SidebarMenuSub className="ml-4 mt-2 space-y-1">
+                                 <SidebarMenuSub className="ml-6 mt-1 space-y-1">
                                   {item.items.map((subItem) => (
                                     <SidebarMenuSubItem key={subItem.url}>
                                       <motion.div
                                         whileHover={{ x: 4 }}
                                         transition={{ duration: 0.2 }}
                                       >
-                                        <SidebarMenuSubButton 
-                                          asChild 
-                                          isActive={isActive(subItem.url)}
-                                          className="rounded-lg h-10 hover:bg-sidebar-accent/50"
-                                        >
+                                         <SidebarMenuSubButton 
+                                           asChild 
+                                           isActive={isActive(subItem.url)}
+                                           className="rounded-lg h-8 hover:bg-accent text-sm"
+                                         >
                                           <NavLink to={subItem.url}>
-                                            <span className="text-sm">{subItem.title}</span>
+                                             <span className="text-sm">{subItem.title}</span>
                                           </NavLink>
                                         </SidebarMenuSubButton>
                                       </motion.div>
@@ -228,24 +217,24 @@ export function AppSidebar() {
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                         >
-                          <SidebarMenuButton 
-                            asChild 
-                            isActive={isActive(item.url!)}
-                            className={cn(
-                              "rounded-xl h-12 transition-all duration-300 hover:bg-sidebar-accent group",
-                              isActive(item.url!) && "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg",
-                              !open && "justify-center"
-                            )}
-                          >
-                            <NavLink to={item.url!}>
-                              <item.icon className={cn(
-                                "w-5 h-5 transition-colors",
-                                isActive(item.url!) ? "text-white" : "text-sidebar-foreground"
-                              )} />
-                              {open && (
-                                <span className="font-medium">{item.title}</span>
-                              )}
-                            </NavLink>
+                           <SidebarMenuButton 
+                             asChild 
+                             isActive={isActive(item.url!)}
+                             className={cn(
+                               "rounded-lg h-10 transition-all duration-200 hover:bg-accent",
+                               isActive(item.url!) && "bg-primary text-primary-foreground",
+                               !open && "justify-center px-2"
+                             )}
+                           >
+                             <NavLink to={item.url!}>
+                               <item.icon className={cn(
+                                 "w-5 h-5 transition-colors",
+                                 isActive(item.url!) ? "text-primary-foreground" : "text-muted-foreground"
+                               )} />
+                               {open && (
+                                 <span className="text-sm font-medium">{item.title}</span>
+                               )}
+                             </NavLink>
                           </SidebarMenuButton>
                         </motion.div>
                       </SidebarTooltip>
