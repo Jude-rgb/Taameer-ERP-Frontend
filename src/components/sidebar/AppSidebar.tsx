@@ -95,12 +95,7 @@ export function AppSidebar() {
   };
 
   return (
-    <motion.div
-      initial={{ x: -300, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-      className="relative"
-    >
+    <div className="relative">
       <Sidebar 
         className={cn(
           "border-r bg-background transition-all duration-300 ease-in-out",
@@ -108,29 +103,26 @@ export function AppSidebar() {
         )}
       >
         <SidebarHeader className="p-4 border-b">
-          <motion.div 
-            className="flex items-center gap-3"
-            whileHover={{ scale: 1.02 }}
-            transition={{ duration: 0.2 }}
-          >
-            <motion.div 
-              className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center"
-              whileHover={{ rotate: 5 }}
-              transition={{ duration: 0.3 }}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                <Building2 className="w-5 h-5 text-primary-foreground" />
+              </div>
+              {open && (
+                <div>
+                  <h2 className="font-semibold text-sm text-foreground">{settings.companyName}</h2>
+                </div>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setOpen(!open)}
+              className="w-8 h-8 hover:bg-accent"
             >
-              <Building2 className="w-5 h-5 text-primary-foreground" />
-            </motion.div>
-            {open && (
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3, delay: 0.1 }}
-              >
-                <h2 className="font-semibold text-sm text-foreground">{settings.companyName}</h2>
-              </motion.div>
-            )}
-          </motion.div>
+              <Menu className="w-4 h-4" />
+            </Button>
+          </div>
         </SidebarHeader>
 
         <SidebarContent className="p-2">
@@ -145,15 +137,12 @@ export function AppSidebar() {
                           open={open && openGroups.includes(item.title)} 
                           onOpenChange={() => open && toggleGroup(item.title)}
                         >
-                          <CollapsibleTrigger asChild>
-                            <motion.div
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                            >
+                           <CollapsibleTrigger asChild>
+                             <div>
                                <SidebarMenuButton 
                                 className={cn(
-                                  "w-full justify-between rounded-lg h-10 transition-all duration-200 hover:bg-accent",
-                                  (isGroupActive(item.items) || isSubItemActive(item.items)) && "bg-primary text-primary-foreground",
+                                  "w-full justify-between rounded-lg h-10 transition-colors hover:bg-accent",
+                                  (isGroupActive(item.items) || isSubItemActive(item.items)) && "bg-primary text-primary-foreground hover:bg-primary/90",
                                   !open && "justify-center px-2"
                                 )}
                               >
@@ -172,57 +161,50 @@ export function AppSidebar() {
                                     openGroups.includes(item.title) && "rotate-180"
                                   )} />
                                 )}
-                              </SidebarMenuButton>
-                            </motion.div>
-                          </CollapsibleTrigger>
+                               </SidebarMenuButton>
+                             </div>
+                           </CollapsibleTrigger>
                           {open && (
-                            <CollapsibleContent>
-                              <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: "auto" }}
-                                exit={{ opacity: 0, height: 0 }}
-                                transition={{ duration: 0.3 }}
-                              >
+                             <CollapsibleContent>
+                               <div>
                                  <SidebarMenuSub className="ml-6 mt-1 space-y-1">
-                                  {item.items.map((subItem) => (
-                                    <SidebarMenuSubItem key={subItem.url}>
-                                      <motion.div
-                                        whileHover={{ x: 4 }}
-                                        transition={{ duration: 0.2 }}
-                                      >
+                                   {item.items.map((subItem) => (
+                                     <SidebarMenuSubItem key={subItem.url}>
+                                       <div>
                                          <SidebarMenuSubButton 
                                            asChild 
                                            isActive={isActive(subItem.url)}
-                                           className="rounded-lg h-8 hover:bg-accent text-sm"
+                                           className={cn(
+                                             "rounded-lg h-8 transition-colors text-sm",
+                                             isActive(subItem.url) 
+                                               ? "bg-primary text-primary-foreground hover:bg-primary/90" 
+                                               : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                                           )}
                                          >
                                           <NavLink to={subItem.url}>
                                              <span className="text-sm">{subItem.title}</span>
                                           </NavLink>
-                                        </SidebarMenuSubButton>
-                                      </motion.div>
-                                    </SidebarMenuSubItem>
+                                         </SidebarMenuSubButton>
+                                       </div>
+                                     </SidebarMenuSubItem>
                                   ))}
-                                </SidebarMenuSub>
-                              </motion.div>
-                            </CollapsibleContent>
+                                 </SidebarMenuSub>
+                               </div>
+                             </CollapsibleContent>
                           )}
                         </Collapsible>
                       </SidebarTooltip>
                     ) : (
-                      <SidebarTooltip content={item.title}>
-                        <motion.div
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.3, delay: index * 0.1 }}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                        >
+                       <SidebarTooltip content={item.title}>
+                         <div>
                            <SidebarMenuButton 
                              asChild 
                              isActive={isActive(item.url!)}
                              className={cn(
-                               "rounded-lg h-10 transition-all duration-200 hover:bg-accent",
-                               isActive(item.url!) && "bg-primary text-primary-foreground",
+                               "rounded-lg h-10 transition-colors",
+                               isActive(item.url!) 
+                                 ? "bg-primary text-primary-foreground hover:bg-primary/90" 
+                                 : "text-muted-foreground hover:bg-accent hover:text-foreground",
                                !open && "justify-center px-2"
                              )}
                            >
@@ -235,9 +217,9 @@ export function AppSidebar() {
                                  <span className="text-sm font-medium">{item.title}</span>
                                )}
                              </NavLink>
-                          </SidebarMenuButton>
-                        </motion.div>
-                      </SidebarTooltip>
+                           </SidebarMenuButton>
+                         </div>
+                       </SidebarTooltip>
                     )}
                   </SidebarMenuItem>
                 ))}
@@ -246,6 +228,6 @@ export function AppSidebar() {
           </SidebarGroup>
         </SidebarContent>
       </Sidebar>
-    </motion.div>
+    </div>
   );
 }
