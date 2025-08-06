@@ -81,16 +81,14 @@ export function AppSidebar() {
     if (open) return <>{children}</>;
     
     return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            {children}
-          </TooltipTrigger>
-          <TooltipContent side={side} className="bg-popover border-border">
-            <p>{content}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          {children}
+        </TooltipTrigger>
+        <TooltipContent side={side} className="bg-popover border-border">
+          <p>{content}</p>
+        </TooltipContent>
+      </Tooltip>
     );
   };
 
