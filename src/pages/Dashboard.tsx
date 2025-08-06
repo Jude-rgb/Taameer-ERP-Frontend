@@ -205,7 +205,7 @@ export const Dashboard = () => {
   };
 
   return (
-    <div className="space-y-6 w-full max-w-7xl mx-auto">
+    <div className="p-6 space-y-6">
       {/* Header Section */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
