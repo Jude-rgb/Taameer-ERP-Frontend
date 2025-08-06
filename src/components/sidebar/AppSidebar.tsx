@@ -144,15 +144,15 @@ export function AppSidebar() {
                                 <SidebarMenuButton 
                                  className={cn(
                                    "w-full justify-between rounded-lg h-10 transition-all duration-200 hover:bg-accent/50 focus-brand",
-                                   (isGroupActive(item.items) || isSubItemActive(item.items)) && "bg-primary text-primary-foreground hover:bg-primary-hover shadow-sm",
+                                    (isGroupActive(item.items) || isSubItemActive(item.items)) && "bg-primary/10 text-primary border border-primary/20 hover:bg-primary/15",
                                    !open && "justify-center px-2"
                                  )}
                                >
                                  <div className="flex items-center gap-3">
-                                   <item.icon className={cn(
-                                     "w-5 h-5 transition-colors",
-                                     (isGroupActive(item.items) || isSubItemActive(item.items)) ? "text-primary-foreground" : "text-muted-foreground"
-                                   )} />
+                                    <item.icon className={cn(
+                                      "w-5 h-5 transition-colors",
+                                      (isGroupActive(item.items) || isSubItemActive(item.items)) ? "text-primary" : "text-muted-foreground"
+                                    )} />
                                    {open && (
                                      <span className="text-sm font-medium">{item.title}</span>
                                    )}
@@ -178,9 +178,9 @@ export function AppSidebar() {
                                             isActive={isActive(subItem.url)}
                                             className={cn(
                                               "rounded-lg h-8 transition-all duration-200 text-sm focus-brand",
-                                              isActive(subItem.url) 
-                                                ? "bg-primary text-primary-foreground hover:bg-primary-hover shadow-sm" 
-                                                : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                                               isActive(subItem.url) 
+                                                 ? "bg-primary/10 text-primary border border-primary/20 hover:bg-primary/15" 
+                                                 : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
                                             )}
                                           >
                                           <NavLink to={subItem.url}>
@@ -204,17 +204,17 @@ export function AppSidebar() {
                               isActive={isActive(item.url!)}
                               className={cn(
                                 "rounded-lg h-10 transition-all duration-200 focus-brand",
-                                isActive(item.url!) 
-                                  ? "bg-primary text-primary-foreground hover:bg-primary-hover shadow-sm" 
-                                  : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+                                 isActive(item.url!) 
+                                   ? "bg-primary/10 text-primary border border-primary/20 hover:bg-primary/15" 
+                                   : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
                                 !open && "justify-center px-2"
                               )}
                             >
                              <NavLink to={item.url!}>
-                               <item.icon className={cn(
-                                 "w-5 h-5 transition-colors",
-                                 isActive(item.url!) ? "text-primary-foreground" : "text-muted-foreground"
-                               )} />
+                                <item.icon className={cn(
+                                  "w-5 h-5 transition-colors",
+                                  isActive(item.url!) ? "text-primary" : "text-muted-foreground"
+                                )} />
                                {open && (
                                  <span className="text-sm font-medium">{item.title}</span>
                                )}
