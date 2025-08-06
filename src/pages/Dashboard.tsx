@@ -205,7 +205,7 @@ export const Dashboard = () => {
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 w-full max-w-7xl mx-auto">
       {/* Header Section */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
@@ -242,7 +242,7 @@ export const Dashboard = () => {
         variants={container} 
         initial="hidden" 
         animate="show" 
-        className="grid gap-6 md:grid-cols-2 lg:grid-cols-4"
+        className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
       >
         {kpiCards.map((card, index) => (
           <motion.div key={card.title} variants={item}>
@@ -286,7 +286,7 @@ export const Dashboard = () => {
       </motion.div>
 
       {/* Main Content Grid */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-3 xl:grid-cols-3">
         {/* Left Column - Charts */}
         <div className="lg:col-span-2 space-y-6">
           {/* Charts Section */}
@@ -431,7 +431,7 @@ export const Dashboard = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.8, duration: 0.5 }}
-        className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
+        className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
       >
         {quickActions.map((action, index) => (
           <motion.div

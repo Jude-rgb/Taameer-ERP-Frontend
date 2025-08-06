@@ -328,7 +328,7 @@ export const Products = () => {
   ];
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6 w-full max-w-7xl mx-auto">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
