@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { User, Lock, Upload, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -27,9 +27,8 @@ export const ProfileSettingsModal = ({ open, onOpenChange }: ProfileSettingsModa
   
   // Profile form state
   const [profileData, setProfileData] = useState({
-    name: user?.name || '',
+    full_name: user?.full_name || '',
     email: user?.email || '',
-    phone: user?.phone || '',
   });
   
   // Password form state
@@ -47,6 +46,7 @@ export const ProfileSettingsModal = ({ open, onOpenChange }: ProfileSettingsModa
   
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,6 +57,7 @@ export const ProfileSettingsModal = ({ open, onOpenChange }: ProfileSettingsModa
       toast({
         title: "Profile Updated",
         description: "Your profile has been updated successfully.",
+        variant: "success",
       });
     } catch (error) {
       toast({
@@ -123,20 +124,51 @@ export const ProfileSettingsModal = ({ open, onOpenChange }: ProfileSettingsModa
   };
 
   const handleAvatarUpload = () => {
-    // Dummy upload - in real app would handle file upload
-    const dummyAvatars = [
-      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-      'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
-    ];
-    
-    const randomAvatar = dummyAvatars[Math.floor(Math.random() * dummyAvatars.length)];
-    updateProfile({ avatar: randomAvatar });
-    
-    toast({
-      title: "Avatar Updated",
-      description: "Your profile picture has been updated.",
-    });
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "Invalid File Type",
+        description: "Please select an image file (JPEG, PNG, GIF, or WebP).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (2MB = 2 * 1024 * 1024 bytes)
+    const maxSize = 2 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast({
+        title: "File Too Large",
+        description: "Please select an image smaller than 2MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Create preview URL
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      updateProfile({ avatar: result });
+      
+      toast({
+        title: "Avatar Updated",
+        description: "Your profile picture has been updated.",
+        variant: "success",
+      });
+    };
+    reader.readAsDataURL(file);
+
+    // Reset file input
+    event.target.value = '';
   };
 
   return (
@@ -150,12 +182,18 @@ export const ProfileSettingsModal = ({ open, onOpenChange }: ProfileSettingsModa
         </DialogHeader>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="profile" className="flex items-center gap-2">
+          <TabsList className="grid w-full grid-cols-2 bg-muted/50 p-1 rounded-xl border border-border/50 h-15">
+            <TabsTrigger 
+              value="profile" 
+              className="flex items-center justify-center gap-2 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=active]:font-medium data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground transition-all duration-300 rounded-lg px-4 py-2 text-sm font-medium h-10"
+            >
               <User className="w-4 h-4" />
               Edit Profile
             </TabsTrigger>
-            <TabsTrigger value="password" className="flex items-center gap-2">
+            <TabsTrigger 
+              value="password" 
+              className="flex items-center justify-center gap-2 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=active]:font-medium data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground transition-all duration-300 rounded-lg px-4 py-2 text-sm font-medium h-10"
+            >
               <Lock className="w-4 h-4" />
               Change Password
             </TabsTrigger>
@@ -170,9 +208,9 @@ export const ProfileSettingsModal = ({ open, onOpenChange }: ProfileSettingsModa
               {/* Avatar Section */}
               <div className="flex flex-col items-center space-y-4">
                 <Avatar className="w-24 h-24">
-                  <AvatarImage src={user?.avatar} alt={user?.name} />
+                  <AvatarImage src={user?.avatar} alt={user?.full_name} />
                   <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
-                    {user?.name?.split(' ').map(n => n[0]).join('').toUpperCase()}
+                    {user?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <Button
@@ -184,17 +222,26 @@ export const ProfileSettingsModal = ({ open, onOpenChange }: ProfileSettingsModa
                   <Upload className="w-4 h-4" />
                   Change Photo
                 </Button>
+                
+                {/* Hidden file input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
               </div>
 
               {/* Profile Form */}
-              <form onSubmit={handleProfileSubmit} className="space-y-4">
+              <form onSubmit={handleProfileSubmit} className="space-y-4 mt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
+                    <Label htmlFor="full_name">Full Name</Label>
                     <Input
-                      id="name"
-                      value={profileData.name}
-                      onChange={(e) => setProfileData(prev => ({ ...prev, name: e.target.value }))}
+                      id="full_name"
+                      value={profileData.full_name}
+                      onChange={(e) => setProfileData(prev => ({ ...prev, full_name: e.target.value }))}
                       placeholder="Enter your full name"
                       required
                     />
@@ -211,17 +258,6 @@ export const ProfileSettingsModal = ({ open, onOpenChange }: ProfileSettingsModa
                       required
                     />
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    value={profileData.phone}
-                    onChange={(e) => setProfileData(prev => ({ ...prev, phone: e.target.value }))}
-                    placeholder="Enter your phone number"
-                    required
-                  />
                 </div>
 
                 <Button

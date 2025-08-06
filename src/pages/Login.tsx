@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Building2, Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,19 +12,27 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/hooks/use-toast';
 
 export const Login = () => {
-  const [email, setEmail] = useState('admin@company.com');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   
-  const { login, isAuthenticated } = useAuthStore();
+  const { loginUser, isAuthenticated, initializeAuth } = useAuthStore();
   const { toast } = useToast();
+  const location = useLocation();
 
+  // Initialize auth state on component mount
+  useEffect(() => {
+    initializeAuth();
+  }, [initializeAuth]);
+
+  // Redirect if already authenticated
   if (isAuthenticated) {
-    return <Navigate to="/" replace />;
+    const from = location.state?.from?.pathname || '/dashboard';
+    return <Navigate to={from} replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,18 +40,35 @@ export const Login = () => {
     setIsLoading(true);
     setError('');
 
+    // Validate inputs
+    if (!email || !password) {
+      setError('Please fill in all fields');
+      setIsLoading(false);
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address');
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const success = await login(email, password);
+      const success = await loginUser(email, password);
       if (success) {
         toast({
           title: "Login Successful",
-          description: "Welcome back to InvoicePro!",
+          description: "Welcome back to Taameer!",
+          variant: "success",
         });
+        // Navigation will be handled by the redirect logic above
       } else {
         setError('Invalid email or password');
       }
-    } catch (err) {
-      setError('An error occurred during login');
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during login');
     } finally {
       setIsLoading(false);
     }
@@ -62,10 +87,10 @@ export const Login = () => {
           <div 
             className="absolute inset-0 bg-cover bg-center bg-no-repeat"
             style={{
-              backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.5)), url('/lovable-uploads/6750a505-781e-4bad-8334-8edd1dc32efa.png')`
+              backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.5)), url('/saas-uploads/login_background.jpg')`
             }}
           />
-          <div className="relative z-10 flex flex-col justify-center px-12 text-white">
+          {/* <div className="relative z-10 flex flex-col justify-center px-12 text-white">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -90,7 +115,7 @@ export const Login = () => {
                 </div>
               </div>
             </motion.div>
-          </div>
+          </div> */}
         </motion.div>
 
         {/* Right Side - Login Form */}
@@ -107,16 +132,13 @@ export const Login = () => {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                className="mx-auto w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center shadow-glow"
+                className="mx-auto w-30 h-15 flex items-center justify-center"
               >
-                <Building2 className="w-8 h-8 text-white" />
+                <img src="/saas-uploads/Logo-01.png" alt="Taameer" className="w-22 h-15" />
               </motion.div>
               
               <div>
-                <h1 className="text-3xl font-bold">Welcome back</h1>
-                <p className="text-muted-foreground mt-2">
-                  Please enter your details.
-                </p>
+                <h1 className="text-3xl font-bold">Welcome back to Taameer</h1>
               </div>
             </div>
 
@@ -158,7 +180,7 @@ export const Login = () => {
                     className="absolute right-0 top-0 h-full px-3"
                     onClick={() => setShowPassword(!showPassword)}
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showPassword ?  <Eye className="w-5 h-5" /> :<EyeOff className="w-5 h-5" /> }
                   </Button>
                 </div>
               </div>
@@ -211,23 +233,6 @@ export const Login = () => {
                 )}
               </Button>
             </form>
-
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">
-                Don't have an account?{' '}
-                <Button variant="link" className="text-primary hover:text-primary-hover p-0">
-                  Register here
-                </Button>
-              </p>
-            </div>
-
-            {/* Demo Credentials */}
-            <div className="mt-8 p-4 bg-muted/50 rounded-lg text-center">
-              <p className="text-sm text-muted-foreground mb-2">Demo Credentials:</p>
-              <p className="font-mono text-xs">
-                admin@company.com / admin123
-              </p>
-            </div>
           </div>
         </motion.div>
       </div>

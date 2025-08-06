@@ -9,14 +9,34 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useSystemStore } from '@/store/useSystemStore';
+import { useUserStore } from '@/store/useUserStore';
 import { useToast } from '@/hooks/use-toast';
+import { validateEmail, validatePassword } from '@/utils/apiUtils';
 
 interface UserModalProps {
   isOpen: boolean;
   onClose: () => void;
   user?: any;
   mode: 'add' | 'edit';
+}
+
+interface FormData {
+  full_name: string;
+  email: string;
+  contact_number: string;
+  role: string;
+  status: string;
+  permissions: string[];
+  password: string;
+  confirmPassword: string;
+}
+
+interface FormErrors {
+  full_name?: string;
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+  role?: string;
 }
 
 const defaultModules = [
@@ -34,27 +54,29 @@ const defaultModules = [
 ];
 
 export const UserModal = ({ isOpen, onClose, user, mode }: UserModalProps) => {
-  const { addUser, updateUser } = useSystemStore();
+  const { addUser, isLoading } = useUserStore();
   const { toast } = useToast();
   
-  const [formData, setFormData] = useState({
-    name: '',
+  const [formData, setFormData] = useState<FormData>({
+    full_name: '',
     email: '',
-    phone: '',
-    role: 'Marketing Officer' as any,
-    status: 'Active' as any,
-    permissions: [] as string[],
+    contact_number: '',
+    role: 'Marketing_Officer',
+    status: 'Active',
+    permissions: [],
     password: '',
     confirmPassword: ''
   });
 
+  const [errors, setErrors] = useState<FormErrors>({});
+
   useEffect(() => {
     if (user && mode === 'edit') {
       setFormData({
-        name: user.name || '',
+        full_name: user.full_name || '',
         email: user.email || '',
-        phone: user.phone || '',
-        role: user.role || 'Marketing Officer',
+        contact_number: user.contact_number || '',
+        role: user.role || 'Marketing_Officer',
         status: user.status || 'Active',
         permissions: user.permissions || [],
         password: '',
@@ -62,54 +84,97 @@ export const UserModal = ({ isOpen, onClose, user, mode }: UserModalProps) => {
       });
     } else {
       setFormData({
-        name: '',
+        full_name: '',
         email: '',
-        phone: '',
-        role: 'Marketing Officer',
+        contact_number: '',
+        role: 'Marketing_Officer',
         status: 'Active',
         permissions: ['dashboard'],
         password: '',
         confirmPassword: ''
       });
     }
+    setErrors({});
   }, [user, mode, isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors: FormErrors = {};
+
+    // Required fields validation
+    if (!formData.full_name.trim()) {
+      newErrors.full_name = 'Full name is required';
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!validateEmail(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
+    if (mode === 'add') {
+      if (!formData.password) {
+        newErrors.password = 'Password is required';
+      } else {
+        const passwordValidation = validatePassword(formData.password);
+        if (!passwordValidation.isValid) {
+          newErrors.password = passwordValidation.message;
+        }
+      }
+
+      if (!formData.confirmPassword) {
+        newErrors.confirmPassword = 'Please confirm your password';
+      } else if (formData.password !== formData.confirmPassword) {
+        newErrors.confirmPassword = 'Passwords do not match';
+      }
+    }
+
+    if (!formData.role) {
+      newErrors.role = 'Role is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (mode === 'add' && formData.password !== formData.confirmPassword) {
-      toast({
-        title: "Error",
-        description: "Passwords do not match",
-        variant: "destructive"
-      });
+    if (!validateForm()) {
       return;
     }
 
-    const userData = {
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      role: formData.role,
-      status: formData.status,
-      permissions: formData.permissions
-    };
-
-    if (mode === 'add') {
-      addUser(userData);
+    try {
+      if (mode === 'add') {
+        await addUser(formData);
+        toast({
+          title: "Success",
+          description: "User created successfully",
+          variant: "success",
+        });
+        onClose();
+      } else if (mode === 'edit') {
+        // TODO: Implement edit functionality when API is available
+        toast({
+          title: "Info",
+          description: "Edit functionality will be implemented when API is available",
+          variant: "info",
+        });
+      }
+    } catch (error) {
       toast({
-        title: "Success",
-        description: "User added successfully"
-      });
-    } else {
-      updateUser(user.id, userData);
-      toast({
-        title: "Success", 
-        description: "User updated successfully"
+        title: "Error",
+        description: error.message || "Failed to save user",
+        variant: "destructive",
       });
     }
-
-    onClose();
   };
 
   const handlePermissionChange = (moduleId: string, checked: boolean) => {
@@ -136,9 +201,9 @@ export const UserModal = ({ isOpen, onClose, user, mode }: UserModalProps) => {
 
         <form onSubmit={handleSubmit}>
           <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="basic">Basic Info</TabsTrigger>
-              <TabsTrigger value="permissions">Permissions</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 bg-muted/50 p-1 rounded-xl border border-border/50 h-15">
+              <TabsTrigger value="basic" className="flex items-center justify-center gap-2 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=active]:font-medium data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground transition-all duration-300 rounded-lg px-4 py-2 text-sm font-medium h-10">Basic Info</TabsTrigger>
+              <TabsTrigger value="permissions"  className="flex items-center justify-center gap-2 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=active]:font-medium data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground transition-all duration-300 rounded-lg px-4 py-2 text-sm font-medium h-10">Permissions</TabsTrigger>
             </TabsList>
 
             <TabsContent value="basic" className="space-y-4 mt-4">
@@ -152,55 +217,65 @@ export const UserModal = ({ isOpen, onClose, user, mode }: UserModalProps) => {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="name">Full Name</Label>
+                      <Label htmlFor="full_name">Full Name *</Label>
                       <Input
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                        id="full_name"
+                        value={formData.full_name}
+                        onChange={(e) => handleInputChange('full_name', e.target.value)}
                         placeholder="Enter full name"
                         required
+                        className={errors.full_name ? 'border-red-500' : ''}
                       />
+                      {errors.full_name && (
+                        <p className="text-sm text-red-500">{errors.full_name}</p>
+                      )}
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="email">Email Address</Label>
+                      <Label htmlFor="email">Email Address *</Label>
                       <Input
                         id="email"
                         type="email"
                         value={formData.email}
-                        onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                        onChange={(e) => handleInputChange('email', e.target.value)}
                         placeholder="Enter email address"
                         required
+                        className={errors.email ? 'border-red-500' : ''}
                       />
+                      {errors.email && (
+                        <p className="text-sm text-red-500">{errors.email}</p>
+                      )}
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="phone">Phone Number</Label>
+                      <Label htmlFor="contact_number">Phone Number</Label>
                       <Input
-                        id="phone"
-                        value={formData.phone}
-                        onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                        id="contact_number"
+                        value={formData.contact_number}
+                        onChange={(e) => handleInputChange('contact_number', e.target.value)}
                         placeholder="+968 9123 4567"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="role">Role</Label>
+                      <Label htmlFor="role">Role *</Label>
                       <Select
                         value={formData.role}
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, role: value as any }))}
+                        onValueChange={(value) => handleInputChange('role', value)}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className={errors.role ? 'border-red-500' : ''}>
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Super Admin">Super Admin</SelectItem>
-                          <SelectItem value="Admin">Admin</SelectItem>
-                          <SelectItem value="Marketing Officer">Marketing Officer</SelectItem>
-                          <SelectItem value="Warehouse Officer">Warehouse Officer</SelectItem>
-                          <SelectItem value="Accounts">Accounts</SelectItem>
-                        </SelectContent>
+                                                 <SelectContent>
+                           <SelectItem value="ADMIN">Admin</SelectItem>
+                           <SelectItem value="Accounts">Accounts</SelectItem>
+                           <SelectItem value="Marketing_Officer">Marketing Officer</SelectItem>
+                           <SelectItem value="Warehouse">Warehouse</SelectItem>
+                         </SelectContent>
                       </Select>
+                      {errors.role && (
+                        <p className="text-sm text-red-500">{errors.role}</p>
+                      )}
                     </div>
                   </div>
 
@@ -208,7 +283,7 @@ export const UserModal = ({ isOpen, onClose, user, mode }: UserModalProps) => {
                     <Label htmlFor="status">Status</Label>
                     <Select
                       value={formData.status}
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as any }))}
+                      onValueChange={(value) => handleInputChange('status', value)}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -233,26 +308,34 @@ export const UserModal = ({ isOpen, onClose, user, mode }: UserModalProps) => {
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="password">Password</Label>
+                        <Label htmlFor="password">Password *</Label>
                         <Input
                           id="password"
                           type="password"
                           value={formData.password}
-                          onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                          onChange={(e) => handleInputChange('password', e.target.value)}
                           placeholder="Enter password"
                           required={mode === 'add'}
+                          className={errors.password ? 'border-red-500' : ''}
                         />
+                        {errors.password && (
+                          <p className="text-sm text-red-500">{errors.password}</p>
+                        )}
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="confirmPassword">Confirm Password</Label>
+                        <Label htmlFor="confirmPassword">Confirm Password *</Label>
                         <Input
                           id="confirmPassword"
                           type="password"
                           value={formData.confirmPassword}
-                          onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                          onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
                           placeholder="Confirm password"
                           required={mode === 'add'}
+                          className={errors.confirmPassword ? 'border-red-500' : ''}
                         />
+                        {errors.confirmPassword && (
+                          <p className="text-sm text-red-500">{errors.confirmPassword}</p>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -299,13 +382,22 @@ export const UserModal = ({ isOpen, onClose, user, mode }: UserModalProps) => {
             transition={{ delay: 0.2 }}
             className="flex justify-end gap-3 pt-6"
           >
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
               <X className="w-4 h-4 mr-2" />
               Cancel
             </Button>
-            <Button type="submit">
-              <Save className="w-4 h-4 mr-2" />
-              {mode === 'add' ? 'Add User' : 'Update User'}
+            <Button type="submit" disabled={isLoading} className="bg-primary hover:bg-primary-hover">
+              {isLoading ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  {mode === 'add' ? 'Creating...' : 'Saving...'}
+                </div>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  {mode === 'add' ? 'Add User' : 'Update User'}
+                </>
+              )}
             </Button>
           </motion.div>
         </form>

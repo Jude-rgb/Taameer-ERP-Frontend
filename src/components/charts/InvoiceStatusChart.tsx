@@ -8,27 +8,76 @@ import { Doughnut } from 'react-chartjs-2';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-export const InvoiceStatusChart = () => {
-  const data = {
-    labels: ['Paid', 'Overdue', 'Pending'],
-    datasets: [
-      {
-        data: [1, 1, 0],
-        backgroundColor: [
-          'hsl(142, 71%, 45%)',
-          'hsl(0, 84.2%, 60.2%)',
-          'hsl(45, 93%, 58%)',
-        ],
-        borderColor: [
-          'hsl(142, 71%, 45%)',
-          'hsl(0, 84.2%, 60.2%)',
-          'hsl(45, 93%, 58%)',
-        ],
-        borderWidth: 2,
-        cutout: '75%',
-      },
-    ],
+interface StatusBreakdown {
+  done: number;
+  pending: number;
+  partially: number;
+  overdue: number;
+}
+
+interface InvoiceStatusChartProps {
+  data?: StatusBreakdown;
+  isLoading?: boolean;
+}
+
+export const InvoiceStatusChart: React.FC<InvoiceStatusChartProps> = ({ 
+  data,
+  isLoading = false 
+}) => {
+  // If no data or loading, show empty chart
+  if (isLoading || !data) {
+    return (
+      <div className="h-[200px] w-full flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-muted-foreground text-sm">
+            {isLoading ? 'Loading status data...' : 'No status data available'}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Filter out zero values and create chart data
+  const chartData = {
+    labels: [],
+    datasets: [{
+      data: [],
+      backgroundColor: [],
+      borderColor: [],
+      borderWidth: 2,
+      cutout: '75%',
+    }]
   };
+
+  const colors = {
+    done: 'hsl(142, 71%, 45%)',
+    pending: 'hsl(45, 93%, 58%)',
+    partially: 'hsl(25, 95%, 53%)',
+    overdue: 'hsl(0, 84.2%, 60.2%)'
+  };
+
+  let totalInvoices = 0;
+
+  Object.entries(data).forEach(([status, count]) => {
+    if (count > 0) {
+      chartData.labels.push(status.charAt(0).toUpperCase() + status.slice(1));
+      chartData.datasets[0].data.push(count);
+      chartData.datasets[0].backgroundColor.push(colors[status]);
+      chartData.datasets[0].borderColor.push(colors[status]);
+      totalInvoices += count;
+    }
+  });
+
+  // If no data, show empty state
+  if (totalInvoices === 0) {
+    return (
+      <div className="h-[200px] w-full flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-muted-foreground text-sm">No invoices found</div>
+        </div>
+      </div>
+    );
+  }
 
   const options = {
     responsive: true,
@@ -59,10 +108,10 @@ export const InvoiceStatusChart = () => {
   return (
     <div className="h-[200px] w-full flex items-center justify-center">
       <div className="relative">
-        <Doughnut data={data} options={options} />
+        <Doughnut data={chartData} options={options} />
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
-            <div className="text-2xl font-bold">2</div>
+            <div className="text-2xl font-bold">{totalInvoices}</div>
             <div className="text-xs text-muted-foreground">Total</div>
           </div>
         </div>

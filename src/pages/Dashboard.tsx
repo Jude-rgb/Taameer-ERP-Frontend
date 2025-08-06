@@ -1,15 +1,22 @@
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, DollarSign, FileText, AlertTriangle, Package, Users, Calendar, BarChart, Zap, Shield, Target } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { TrendingUp, TrendingDown, Receipt, FileText, AlertTriangle, Package, Users, Calendar, BarChart, Quote } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { SalesChart } from '@/components/charts/SalesChart';
 import { ProductChart } from '@/components/charts/ProductChart';
 import { InvoiceStatusChart } from '@/components/charts/InvoiceStatusChart';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
-import { formatOMRCurrency, dummyProducts, dummyInvoices } from '@/data/dummyData';
+import { RecentInvoices } from '@/components/dashboard/RecentInvoices';
+import { dummyProducts } from '@/data/dummyData';
+import { formatOMRCurrency } from '@/utils/formatters';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useQuotationStore } from '@/store/useQuotationStore';
+import { useInvoiceStore } from '@/store/useInvoiceStore';
+import { useToast } from '@/hooks/use-toast';
+import { useThemeStore } from '@/store/useThemeStore';
+
 const container = {
   hidden: {
     opacity: 0
@@ -21,6 +28,7 @@ const container = {
     }
   }
 };
+
 const item = {
   hidden: {
     opacity: 0,
@@ -31,42 +39,104 @@ const item = {
     y: 0
   }
 };
+
 export const Dashboard = () => {
   const { user } = useAuthStore();
+  const { toast } = useToast();
+  const { theme } = useThemeStore();
+  const [showMyData, setShowMyData] = useState(false);
   
-  // Calculate KPIs
-  const totalSales = dummyInvoices.reduce((sum, invoice) => sum + invoice.amount, 0);
-  const totalInvoices = dummyInvoices.length;
-  const outstandingPayments = dummyInvoices.filter(inv => inv.status !== 'Paid').reduce((sum, invoice) => sum + invoice.remainingAmount, 0);
+  // Zustand stores
+  const { 
+    quotationSummary, 
+    fetchQuotationSummary, 
+    isLoading: quotationLoading 
+  } = useQuotationStore();
+  
+  const { 
+    invoices, 
+    fetchInvoices, 
+    getRecentInvoices, 
+    getTotalSales,
+    getOutstandingPayments,
+    getInvoiceStatusBreakdown,
+    getSalesTrends,
+    getTopProducts,
+    getTopProductsByMonth,
+    isLoading: invoiceLoading 
+  } = useInvoiceStore();
+
+  // Get user from localStorage for the greeting
+  const getUserFromStorage = () => {
+    try {
+      const userStr = localStorage.getItem('user');
+      return userStr ? JSON.parse(userStr) : null;
+    } catch (error) {
+      console.error('Error parsing user from localStorage:', error);
+      return null;
+    }
+  };
+
+  const storedUser = getUserFromStorage();
+  const displayName = storedUser?.full_name || user?.full_name || 'Admin';
+  const currentUserId = showMyData ? storedUser?.id : null;
+  
+  // Calculate KPIs from real data
+  const totalSales = getTotalSales(currentUserId);
+  const totalInvoices = invoices.length;
+  const outstandingPayments = getOutstandingPayments(currentUserId);
   const lowStockItems = dummyProducts.filter(product => product.stock <= product.minStock).length;
   
+  // Get real data for charts
+  const salesTrends = getSalesTrends(currentUserId, 'monthly');
+  const invoiceStatusData = getInvoiceStatusBreakdown(currentUserId) as {
+    done: number;
+    pending: number;
+    partially: number;
+    overdue: number;
+  };
+  const recentInvoices = getRecentInvoices(currentUserId);
+  
+  // Updated KPI cards with proper dark mode support and contrast ratios
   const kpiCards = [
     {
       title: 'Total Sales',
       value: formatOMRCurrency(totalSales),
-      change: '+12.5%',
+      change: invoiceLoading ? 'Loading...' : 'From invoices',
       trend: 'up',
-      icon: DollarSign,
-      gradient: 'bg-gradient-primary',
-      textColor: 'text-white'
+      icon: Receipt,
+      // Dark mode: blue-600 (#2563eb), Light mode: blue-500
+      gradient: theme === 'dark' 
+        ? 'bg-gradient-to-br from-blue-600 to-blue-700' 
+        : 'bg-gradient-to-br from-blue-500 to-blue-600',
+      textColor: 'text-white',
+      subtitleColor: 'text-white/75'
     },
     {
-      title: 'Total Invoices',
-      value: totalInvoices.toString(),
-      change: '+8 this month',
+      title: 'Total Quotations',
+      value: quotationSummary.total_number_of_quotations.toString(),
+      change: quotationLoading ? 'Loading...' : 'Total count',
       trend: 'up',
-      icon: FileText,
-      gradient: 'bg-gradient-blue',
-      textColor: 'text-white'
+      icon: Quote,
+      // Dark mode: purple-600 (#7c3aed), Light mode: purple-500
+      gradient: theme === 'dark' 
+        ? 'bg-gradient-to-br from-purple-600 to-purple-700' 
+        : 'bg-gradient-to-br from-purple-500 to-purple-600',
+      textColor: 'text-white',
+      subtitleColor: 'text-white/75'
     },
     {
       title: 'Outstanding Payments',
       value: formatOMRCurrency(outstandingPayments),
-      change: '-5.2%',
+      change: 'Pending amounts',
       trend: 'down',
       icon: AlertTriangle,
-      gradient: 'bg-gradient-orange',
-      textColor: 'text-white'
+      // Dark mode: red-600 (#dc2626), Light mode: red-500
+      gradient: theme === 'dark' 
+        ? 'bg-gradient-to-br from-red-600 to-red-700' 
+        : 'bg-gradient-to-br from-red-500 to-red-600',
+      textColor: 'text-white',
+      subtitleColor: 'text-white/75'
     },
     {
       title: 'Low Stock Items',
@@ -74,83 +144,97 @@ export const Dashboard = () => {
       change: 'Needs attention',
       trend: 'warning',
       icon: Package,
-      gradient: 'bg-gradient-pink',
-      textColor: 'text-white'
+      // Dark mode: pink-600 (#db2777), Light mode: pink-500
+      gradient: theme === 'dark' 
+        ? 'bg-gradient-to-br from-pink-600 to-pink-700' 
+        : 'bg-gradient-to-br from-pink-500 to-pink-600',
+      textColor: 'text-white',
+      subtitleColor: 'text-white/75'
     }
   ];
 
   const quickActions = [
-    { title: 'Create Quotation', icon: FileText, color: 'bg-gradient-primary', description: 'New quote for customers' },
+    { title: 'Create Quotation', icon: Quote, color: 'bg-gradient-primary', description: 'New quote for customers' },
     { title: 'Add Product', icon: Package, color: 'bg-gradient-success', description: 'Expand inventory' },
     { title: 'View Reports', icon: BarChart, color: 'bg-gradient-warning', description: 'Business analytics' },
     { title: 'Manage Users', icon: Users, color: 'bg-gradient-teal', description: 'Team management' },
   ];
 
-  const otherFunctions = [
-    { title: 'Optimization', icon: Zap, color: 'bg-accent-orange', progress: 87 },
-    { title: 'Security', icon: Shield, color: 'bg-accent-teal', progress: 95 },
-    { title: 'Performance', icon: Target, color: 'bg-accent-pink', progress: 72 },
-  ];
+  // Function to capitalize status
+  const capitalizeStatus = (status: string) => {
+    return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+  };
+
+  // Fetch data on component mount
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        // Fetch quotation summary
+        const userId = showMyData ? storedUser?.id : null;
+        await fetchQuotationSummary(userId);
+        
+        // Fetch invoices
+        await fetchInvoices();
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to fetch dashboard data",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchDashboardData();
+  }, [showMyData, fetchQuotationSummary, fetchInvoices, toast, storedUser?.id]);
+
+  // Handle My Data toggle
+  const handleMyDataToggle = async () => {
+    const newShowMyData = !showMyData;
+    setShowMyData(newShowMyData);
+    
+    try {
+      const userId = newShowMyData ? storedUser?.id : null;
+      await fetchQuotationSummary(userId);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to fetch quotation data",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="space-y-6 p-6">
-      {/* Hero Welcome Card */}
-      <motion.div
+      {/* Header Section */}
+      <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
+        transition={{ duration: 0.5 }}
+        className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
       >
-        <Card className="relative overflow-hidden border-0 bg-gradient-primary text-white shadow-2xl">
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-pink-600/20" />
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-32 translate-x-32" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24" />
-          
-          <CardContent className="relative p-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <motion.h1 
-                  className="text-4xl font-bold mb-2"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.2 }}
-                >
-                  Hello, {user?.name || 'Admin'}!
-                </motion.h1>
-                <motion.p 
-                  className="text-xl opacity-90 mb-4"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  Welcome back to your dashboard
-                </motion.p>
-                <motion.p 
-                  className="text-white/80"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.4 }}
-                >
-                  {new Date().toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })}
-                </motion.p>
-              </div>
-              
-              <motion.div
-                className="hidden lg:block"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.5 }}
-              >
-                <div className="w-32 h-32 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-sm">
-                  <Calendar className="w-16 h-16 text-white/80" />
-                </div>
-              </motion.div>
-            </div>
-          </CardContent>
-        </Card>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Welcome back, {displayName}! 👋
+          </h1>
+          <p className="text-muted-foreground">
+            Here's what's happening with your business today.
+          </p>
+        </div>
+        
+        <div className="flex items-center gap-4">
+          <div className="flex items-center space-x-2">
+            <label htmlFor="show-my-data" className="text-sm font-medium">
+              Show My Data Only
+            </label>
+            <Switch
+              id="show-my-data"
+              checked={showMyData}
+              onCheckedChange={handleMyDataToggle}
+              className="data-[state=checked]:bg-primary"
+            />
+          </div>
+        </div>
       </motion.div>
 
       {/* KPI Cards */}
@@ -162,17 +246,16 @@ export const Dashboard = () => {
       >
         {kpiCards.map((card, index) => (
           <motion.div key={card.title} variants={item}>
-            <Card className={`relative overflow-hidden transition-all duration-500 hover:shadow-2xl hover:scale-105 border-0 ${card.gradient} ${card.textColor} group cursor-pointer`}>
+            <Card className={`relative overflow-hidden transition-all duration-500 hover:shadow-2xl hover:scale-105 border-0 ${card.gradient} ${card.textColor} group cursor-pointer hover:brightness-110`}>
               <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-sm font-medium text-white/90">
+                <CardTitle className="text-sm font-medium text-white">
                   {card.title}
                 </CardTitle>
                 <motion.div 
                   className="p-3 rounded-xl bg-white/20 backdrop-blur-sm"
                   whileHover={{ rotate: 10, scale: 1.1 }}
-                  transition={{ duration: 0.3 }}
                 >
                   <card.icon className="h-5 w-5 text-white" />
                 </motion.div>
@@ -187,7 +270,7 @@ export const Dashboard = () => {
                 >
                   {card.value}
                 </motion.div>
-                <div className="flex items-center space-x-2 text-sm text-white/80">
+                <div className="flex items-center space-x-2 text-sm" style={{ color: 'rgba(255,255,255,0.75)' }}>
                   {card.trend === 'up' && <TrendingUp className="h-4 w-4 text-white" />}
                   {card.trend === 'down' && <TrendingDown className="h-4 w-4 text-white" />}
                   {card.trend === 'warning' && <AlertTriangle className="h-4 w-4 text-white" />}
@@ -213,27 +296,35 @@ export const Dashboard = () => {
             transition={{ delay: 0.4, duration: 0.5 }}
             className="grid gap-6 lg:grid-cols-2"
           >
-            <Card className="border-0 bg-white/50 backdrop-blur-lg shadow-card hover:shadow-xl transition-all duration-300">
+            <Card className="border-0 bg-card hover:shadow-xl transition-all duration-300">
               <CardHeader className="pb-4">
                 <CardTitle className="text-lg font-semibold">Sales Trends</CardTitle>
                 <CardDescription>
-                  Performance over the last 30 days
+                  Performance over the last 6 months 
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <SalesChart />
+                <SalesChart 
+                  data={salesTrends} 
+                  period="monthly"
+                  isLoading={invoiceLoading}
+                />
               </CardContent>
             </Card>
 
-            <Card className="border-0 bg-white/50 backdrop-blur-lg shadow-card hover:shadow-xl transition-all duration-300">
+            <Card className="border-0 bg-card hover:shadow-xl transition-all duration-300">
               <CardHeader className="pb-4">
                 <CardTitle className="text-lg font-semibold">Top Products</CardTitle>
                 <CardDescription>
-                  Best performing by sales volume
+                  Best performing by units sold (monthly)
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ProductChart />
+                <ProductChart 
+                  data={getTopProducts(currentUserId)} 
+                  monthlyData={getTopProductsByMonth(currentUserId)}
+                  isLoading={invoiceLoading}
+                />
               </CardContent>
             </Card>
           </motion.div>
@@ -244,7 +335,7 @@ export const Dashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, duration: 0.5 }}
           >
-            <Card className="border-0 bg-white/50 backdrop-blur-lg shadow-card">
+            <Card className="border-0 bg-card">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold">Recent Activity</CardTitle>
                 <CardDescription>
@@ -258,42 +349,29 @@ export const Dashboard = () => {
           </motion.div>
         </div>
 
-        {/* Right Column - Other Functions & Stats */}
+        {/* Right Column - Recent Invoices & Stats */}
         <div className="space-y-6">
-          {/* Other Functions */}
+          {/* Recent Invoices */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.5, duration: 0.5 }}
           >
-            <Card className="border-0 bg-white/50 backdrop-blur-lg shadow-card">
+            <Card className="border-0 bg-card">
               <CardHeader>
-                <CardTitle className="text-lg font-semibold">Other Functions</CardTitle>
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  Recent Invoices
+                </CardTitle>
+                <CardDescription>
+                  Latest 5 invoices
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {otherFunctions.map((func, index) => (
-                  <motion.div
-                    key={func.title}
-                    className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-white/30 to-white/10 backdrop-blur-sm hover:scale-105 transition-all duration-300 cursor-pointer"
-                    whileHover={{ x: 5 }}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.6 + index * 0.1 }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${func.color}`}>
-                        <func.icon className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <p className="font-medium">{func.title}</p>
-                        <p className="text-sm text-muted-foreground">{func.progress}%</p>
-                      </div>
-                    </div>
-                    <div className="w-16">
-                      <Progress value={func.progress} className="h-2" />
-                    </div>
-                  </motion.div>
-                ))}
+              <CardContent>
+                <RecentInvoices 
+                  invoices={recentInvoices} 
+                  isLoading={invoiceLoading}
+                />
               </CardContent>
             </Card>
           </motion.div>
@@ -304,7 +382,7 @@ export const Dashboard = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.7, duration: 0.5 }}
           >
-            <Card className="border-0 bg-white/50 backdrop-blur-lg shadow-card">
+            <Card className="border-0 bg-card">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold">Invoice Status</CardTitle>
                 <CardDescription>
@@ -312,28 +390,34 @@ export const Dashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <InvoiceStatusChart />
+                <InvoiceStatusChart 
+                  data={invoiceStatusData}
+                  isLoading={invoiceLoading}
+                />
                 
                 {/* Status Legend */}
                 <div className="mt-6 space-y-3">
-                  {[
-                    { label: 'Paid', count: 1, color: 'bg-success' },
-                    { label: 'Overdue', count: 1, color: 'bg-destructive' },
-                    { label: 'Pending', count: 0, color: 'bg-warning' }
-                  ].map((status) => (
-                    <motion.div 
-                      key={status.label} 
-                      className="flex items-center justify-between p-2 rounded-lg hover:bg-white/30 transition-colors"
-                      whileHover={{ x: 5 }}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-3 h-3 rounded-full ${status.color}`} />
-                        <span className="text-sm font-medium">{status.label}</span>
-                      </div>
-                      <Badge variant="outline" className="bg-white/50">
-                        {status.count}
-                      </Badge>
-                    </motion.div>
+                  {Object.entries(invoiceStatusData || {}).map(([status, count]) => (
+                    count > 0 && (
+                      <motion.div 
+                        key={status} 
+                        className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                        whileHover={{ x: 5 }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-3 h-3 rounded-full ${
+                            status === 'done' ? 'bg-green-500' :
+                            status === 'pending' ? 'bg-yellow-500' :
+                            status === 'partially' ? 'bg-orange-500' :
+                            'bg-red-500'
+                          }`} />
+                          <span className="text-sm font-medium capitalize">{capitalizeStatus(status)}</span>
+                        </div>
+                        <Badge variant="outline" className="bg-muted/50">
+                          {count}
+                        </Badge>
+                      </motion.div>
+                    )
                   ))}
                 </div>
               </CardContent>
@@ -358,7 +442,7 @@ export const Dashboard = () => {
             whileHover={{ scale: 1.05, y: -5 }}
             whileTap={{ scale: 0.95 }}
           >
-            <Card className={`border-0 ${action.color} text-white cursor-pointer transition-all duration-300 hover:shadow-2xl group overflow-hidden relative`}>
+            <Card className={`border-0 ${action.color} text-white cursor-pointer transition-all duration-300 hover:shadow-2xl group overflow-hidden relative hover:brightness-110`}>
               <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-10 translate-x-10" />
               

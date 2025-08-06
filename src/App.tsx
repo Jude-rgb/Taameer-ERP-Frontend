@@ -17,6 +17,7 @@ import { Reports } from "./pages/Reports";
 import { UserManagement } from "./pages/UserManagement";
 import { SystemSettings } from "./pages/SystemSettings";
 import NotFound from "./pages/NotFound";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -28,8 +29,13 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={<AppLayout />}>
+          <Route path="/" element={
+            <ProtectedRoute>
+              <AppLayout />
+            </ProtectedRoute>
+          }>
             <Route index element={<Dashboard />} />
+            <Route path="dashboard" element={<Dashboard />} />
             <Route path="inventory/products" element={<Products />} />
             <Route path="inventory/purchase-orders" element={<PurchaseOrders />} />
             <Route path="inventory/stock" element={<StockManagement />} />

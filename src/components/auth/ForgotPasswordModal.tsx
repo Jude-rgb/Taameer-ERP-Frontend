@@ -42,6 +42,18 @@ export const ForgotPasswordModal = ({ open, onOpenChange }: ForgotPasswordModalP
     }
   };
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      // Reset all form data and steps when modal is closed
+      setFormData({ email: '', otp: '', newPassword: '', confirmPassword: '' });
+      setShowPassword(false);
+      setShowConfirmPassword(false);
+      setIsLoading(false);
+      resetForgotPassword();
+    }
+    onOpenChange(open);
+  };
+
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -52,6 +64,7 @@ export const ForgotPasswordModal = ({ open, onOpenChange }: ForgotPasswordModalP
         toast({
           title: "OTP Sent",
           description: "Please check your email for the verification code.",
+          variant: "info",
         });
       }
     } catch (error) {
@@ -75,6 +88,7 @@ export const ForgotPasswordModal = ({ open, onOpenChange }: ForgotPasswordModalP
         toast({
           title: "OTP Verified",
           description: "Please enter your new password.",
+          variant: "info",
         });
       } else {
         toast({
@@ -114,6 +128,7 @@ export const ForgotPasswordModal = ({ open, onOpenChange }: ForgotPasswordModalP
         toast({
           title: "Password Reset Successful",
           description: "Your password has been reset successfully.",
+          variant: "success",
         });
         onOpenChange(false);
         resetForgotPassword();
@@ -203,7 +218,7 @@ export const ForgotPasswordModal = ({ open, onOpenChange }: ForgotPasswordModalP
                   className="absolute right-0 top-0 h-full px-3"
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ?   <Eye className="w-4 h-4" />:<EyeOff className="w-4 h-4" />}
                 </Button>
               </div>
             </div>
@@ -228,7 +243,7 @@ export const ForgotPasswordModal = ({ open, onOpenChange }: ForgotPasswordModalP
                   className="absolute right-0 top-0 h-full px-3"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 >
-                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showConfirmPassword ? <Eye className="w-4 h-4" />:<EyeOff className="w-4 h-4" />}
                 </Button>
               </div>
             </div>
@@ -271,7 +286,7 @@ export const ForgotPasswordModal = ({ open, onOpenChange }: ForgotPasswordModalP
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-2">

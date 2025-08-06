@@ -1,0 +1,34 @@
+import api from "./config.js";
+import { processApiResponse, handleApiError } from "@/utils/apiUtils.js";
+
+/**
+ * Dashboard API services
+ */
+
+/**
+ * Fetch quotation summary
+ * @param {number|null} userId - User ID for filtering, null for all data
+ * @returns {Promise<Object>} Quotation summary data
+ */
+export const fetchQuotationSummary = async (userId = null) => {
+  try {
+    const payload = { user_id: userId };
+    const response = await api.post("api/taameer/quotation/summary", payload);
+    return processApiResponse(response);
+  } catch (error) {
+    throw new Error(handleApiError(error));
+  }
+};
+
+/**
+ * Fetch all invoices
+ * @returns {Promise<Object>} Invoices data
+ */
+export const fetchInvoices = async () => {
+  try {
+    const response = await api.get("api/taameer/invoice/all");
+    return processApiResponse(response);
+  } catch (error) {
+    throw new Error(handleApiError(error));
+  }
+};

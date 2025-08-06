@@ -12,7 +12,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
-import { formatOMRCurrency } from '@/data/dummyData';
+import { formatOMRCurrency } from '@/utils/formatters';
 
 interface ActivityItem {
   id: string;
@@ -32,61 +32,59 @@ const activities: ActivityItem[] = [
   {
     id: '1',
     type: 'payment',
-    title: 'Payment Received',
-    description: 'Payment of 156.25 OMR received for Invoice #INV-2024-001',
+    title: 'Lorem Ipsum Payment',
+    description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore.',
     timestamp: new Date(Date.now() - 10 * 60 * 1000),
     status: 'success',
-    amount: 156.25,
+    amount: 100.00,
     user: {
-      name: 'Al-Rashid Trading LLC',
+      name: 'Lorem Ipsum',
     },
   },
   {
     id: '2',
     type: 'invoice',
-    title: 'New Invoice Created',
-    description: 'Invoice #INV-2024-003 created for Gulf Hardware Stores',
+    title: 'Lorem Ipsum Invoice',
+    description: 'Ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.',
     timestamp: new Date(Date.now() - 25 * 60 * 1000),
     status: 'info',
-    amount: 425,
+    amount: 100.00,
     user: {
-      name: 'Ahmed Al-Mansouri',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+      name: 'Lorem Ipsum',
     },
   },
   {
     id: '3',
     type: 'product',
-    title: 'Low Stock Alert',
-    description: 'Concrete Block 200mm stock is critically low (5 units remaining)',
+    title: 'Lorem Ipsum Alert',
+    description: 'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla.',
     timestamp: new Date(Date.now() - 45 * 60 * 1000),
     status: 'warning',
     user: {
-      name: 'System',
+      name: 'Lorem Ipsum',
     },
   },
   {
     id: '4',
     type: 'customer',
-    title: 'New Customer Added',
-    description: 'Al-Noor Trading Company has been added to the customer database',
+    title: 'Lorem Ipsum Customer',
+    description: 'Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit.',
     timestamp: new Date(Date.now() - 120 * 60 * 1000),
     status: 'info',
     user: {
-      name: 'Fatima Al-Zahra',
-      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612e1e8?w=150&h=150&fit=crop&crop=face',
+      name: 'Lorem Ipsum',
     },
   },
   {
     id: '5',
     type: 'invoice',
-    title: 'Invoice Overdue',
-    description: 'Invoice #INV-2024-002 is now 5 days overdue',
+    title: 'Lorem Ipsum Overdue',
+    description: 'Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.',
     timestamp: new Date(Date.now() - 180 * 60 * 1000),
     status: 'error',
-    amount: 875,
+    amount: 100.00,
     user: {
-      name: 'Al-Zahra Construction',
+      name: 'Lorem Ipsum',
     },
   },
 ];

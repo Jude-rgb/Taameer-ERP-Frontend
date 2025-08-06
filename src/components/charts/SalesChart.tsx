@@ -10,6 +10,7 @@ import {
   Filler,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import { formatTrendDate } from '@/utils/formatters';
 
 ChartJS.register(
   CategoryScale,
@@ -22,13 +23,62 @@ ChartJS.register(
   Filler
 );
 
-export const SalesChart = () => {
-  const data = {
-    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+interface SalesData {
+  date: string;
+  sales: number;
+  count: number;
+}
+
+interface SalesChartProps {
+  data?: SalesData[];
+  period?: 'monthly' | 'weekly' | 'daily';
+  isLoading?: boolean;
+}
+
+export const SalesChart: React.FC<SalesChartProps> = ({ 
+  data = [], 
+  period = 'monthly',
+  isLoading = false 
+}) => {
+  // If no data or loading, show empty chart
+  if (isLoading || !data || data.length === 0) {
+    const emptyData = {
+      labels: ['No Data'],
+      datasets: [
+        {
+          label: 'Sales (OMR)',
+          data: [0],
+          borderColor: 'hsl(213, 100%, 55%)',
+          backgroundColor: 'hsla(213, 100%, 55%, 0.1)',
+          borderWidth: 3,
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: 'hsl(213, 100%, 55%)',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 6,
+          pointHoverRadius: 8,
+        },
+      ],
+    };
+
+    return (
+      <div className="h-[300px] w-full flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-muted-foreground text-sm">
+            {isLoading ? 'Loading sales data...' : 'No sales data available'}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const chartData = {
+    labels: data.map(item => formatTrendDate(item.date, period)),
     datasets: [
       {
         label: 'Sales (OMR)',
-        data: [2500, 3200, 2800, 4100],
+        data: data.map(item => item.sales),
         borderColor: 'hsl(213, 100%, 55%)',
         backgroundColor: 'hsla(213, 100%, 55%, 0.1)',
         borderWidth: 3,
@@ -60,7 +110,13 @@ export const SalesChart = () => {
         displayColors: false,
         callbacks: {
           label: function(context: any) {
-            return `${context.parsed.y.toFixed(3)} OMR`;
+            const value = context.parsed.y;
+            const formattedValue = new Intl.NumberFormat("en-US", {
+              minimumFractionDigits: 3,
+              maximumFractionDigits: 3,
+              useGrouping: true, // This ensures commas are added
+            }).format(value);
+            return `${formattedValue} OMR`;
           },
         },
       },
@@ -94,7 +150,12 @@ export const SalesChart = () => {
             size: 12,
           },
           callback: function(value: any) {
-            return `${value} OMR`;
+            const formattedValue = new Intl.NumberFormat("en-US", {
+              minimumFractionDigits: 3,
+              maximumFractionDigits: 3,
+              useGrouping: true, // This ensures commas are added
+            }).format(value);
+            return `${formattedValue} OMR`;
           },
         },
       },
@@ -108,7 +169,7 @@ export const SalesChart = () => {
 
   return (
     <div className="h-[300px] w-full">
-      <Line data={data} options={options} />
+      <Line data={chartData} options={options} />
     </div>
   );
 };

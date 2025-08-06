@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Upload } from 'lucide-react';
+import { X, Upload, Plus, Trash2, Package, Calendar, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Dialog,
   DialogContent,
@@ -19,317 +20,694 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Product } from '@/data/dummyData';
+import { Badge } from '@/components/ui/badge';
+import { useProductStore } from '@/store/useProductStore';
+import { useToast } from '@/hooks/use-toast';
+
+// Product interface based on API requirements
+interface Product {
+  id?: number;
+  product_code: string;
+  product_brand: string;
+  product_name: string;
+  description?: string;
+  product_image?: string;
+  product_weight: string;
+  product_unit: string;
+  unit_price_shop: number;
+  unit_price_customer: number;
+  cost_price?: number;
+  total_stock?: number;
+  warehouse_stock?: number;
+  sold_stock?: number;
+  availability?: 'online' | 'offline';
+  updated_at?: string;
+  created_at?: string;
+}
+
+interface ProductVariation {
+  id: string;
+  type: string;
+  value: string;
+}
 
 interface ProductModalProps {
   isOpen: boolean;
   onClose: () => void;
   product?: Product | null;
-  onSave: (product: Product) => void;
 }
 
-const categories = [
-  'Steel Products',
-  'Cement',
-  'Blocks',
-  'Wire Products',
-  'Hardware',
-  'Tools',
-  'Paint & Chemicals',
-  'Electrical',
+const PRODUCT_UNITS = [
+  'kg',
+  'ton',
+  'liter',
+  'meter',
+  'piece',
+  'box',
+  'bag'
 ];
 
-const suppliers = [
-  'Oman Steel Company',
-  'Gulf Cement Industries',
-  'Al-Bina Block Factory',
-  'Wire Tech LLC',
-  'Hardware Plus',
-  'Tool Master',
+const VARIATION_TYPES = [
+  'color',
+  'size',
+  'material',
+  'other'
 ];
 
-export const ProductModal = ({ isOpen, onClose, product, onSave }: ProductModalProps) => {
+export const ProductModal = ({ isOpen, onClose, product }: ProductModalProps) => {
+  const { addProduct, updateProduct, getUniqueBrands, isLoading } = useProductStore();
+  const { toast } = useToast();
+  const availableBrands = getUniqueBrands();
+
   const [formData, setFormData] = useState<Partial<Product>>({
-    name: '',
-    sku: '',
-    category: '',
-    price: 0,
-    stock: 0,
-    minStock: 0,
+    product_code: '',
+    product_brand: '',
+    product_name: '',
     description: '',
-    supplier: '',
-    image: 'https://images.unsplash.com/photo-1586864387967-d02ef85d93e8?w=150&h=150&fit=crop',
+    product_image: '',
+    product_weight: '',
+    product_unit: '',
+    unit_price_shop: 0,
+    unit_price_customer: 0,
+    cost_price: 0,
+    total_stock: 0,
+    warehouse_stock: 0,
+    sold_stock: 0,
+    availability: 'online',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [variations, setVariations] = useState<ProductVariation[]>([]);
+  const [newVariationType, setNewVariationType] = useState('');
+  const [newVariationValue, setNewVariationValue] = useState('');
+  const [isTypingBrand, setIsTypingBrand] = useState(false);
+  const [brandInputValue, setBrandInputValue] = useState('');
 
   useEffect(() => {
     if (product) {
-      setFormData(product);
+      setFormData({
+        product_code: product.product_code || '',
+        product_brand: product.product_brand || '',
+        product_name: product.product_name || '',
+        description: product.description || '',
+        product_image: product.product_image || '',
+        product_weight: product.product_weight || '',
+        product_unit: product.product_unit || '',
+        unit_price_shop: product.unit_price_shop || 0,
+        unit_price_customer: product.unit_price_customer || 0,
+        cost_price: product.cost_price || 0,
+        total_stock: product.total_stock || 0,
+        warehouse_stock: product.warehouse_stock || 0,
+        sold_stock: product.sold_stock || 0,
+        availability: product.availability || 'online',
+      });
     } else {
       setFormData({
-        name: '',
-        sku: '',
-        category: '',
-        price: 0,
-        stock: 0,
-        minStock: 0,
+        product_code: '',
+        product_brand: '',
+        product_name: '',
         description: '',
-        supplier: '',
-        image: 'https://images.unsplash.com/photo-1586864387967-d02ef85d93e8?w=150&h=150&fit=crop',
+        product_image: '',
+        product_weight: '',
+        product_unit: '',
+        unit_price_shop: 0,
+        unit_price_customer: 0,
+        cost_price: 0,
+        total_stock: 0,
+        warehouse_stock: 0,
+        sold_stock: 0,
+        availability: 'online',
       });
     }
     setErrors({});
+    setVariations([]);
+    setBrandInputValue('');
+    setIsTypingBrand(false);
   }, [product, isOpen]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name?.trim()) {
-      newErrors.name = 'Product name is required';
+    if (!formData.product_code?.trim()) {
+      newErrors.product_code = 'Product code is required';
     }
-    if (!formData.sku?.trim()) {
-      newErrors.sku = 'SKU is required';
+    if (!formData.product_brand?.trim()) {
+      newErrors.product_brand = 'Brand is required';
     }
-    if (!formData.category) {
-      newErrors.category = 'Category is required';
+    if (!formData.product_name?.trim()) {
+      newErrors.product_name = 'Product name is required';
     }
-    if (!formData.supplier) {
-      newErrors.supplier = 'Supplier is required';
+    if (!formData.product_weight?.trim()) {
+      newErrors.product_weight = 'Weight is required';
     }
-    if (!formData.price || formData.price <= 0) {
-      newErrors.price = 'Price must be greater than 0';
+    if (!formData.product_unit?.trim()) {
+      newErrors.product_unit = 'Unit is required';
     }
-    if (formData.stock === undefined || formData.stock < 0) {
-      newErrors.stock = 'Stock cannot be negative';
+    if (!formData.unit_price_shop || formData.unit_price_shop <= 0) {
+      newErrors.unit_price_shop = 'Shop price must be greater than 0';
     }
-    if (formData.minStock === undefined || formData.minStock < 0) {
-      newErrors.minStock = 'Minimum stock cannot be negative';
+    if (!formData.unit_price_customer || formData.unit_price_customer <= 0) {
+      newErrors.unit_price_customer = 'Customer price must be greater than 0';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) {
       return;
     }
 
-    const productData: Product = {
-      id: product?.id || '',
-      name: formData.name!,
-      sku: formData.sku!,
-      category: formData.category!,
-      price: formData.price!,
-      stock: formData.stock!,
-      minStock: formData.minStock!,
-      description: formData.description || '',
-      supplier: formData.supplier!,
-      image: formData.image!,
-      createdAt: product?.createdAt || new Date(),
-      updatedAt: new Date(),
-    };
+    try {
+      const payload = {
+        product_code: formData.product_code!,
+        product_brand: formData.product_brand!,
+        product_name: formData.product_name!,
+        description: formData.description || '',
+        product_weight: formData.product_weight!,
+        product_unit: formData.product_unit!,
+        unit_price_shop: Number(formData.unit_price_shop),
+        unit_price_customer: Number(formData.unit_price_customer),
+        cost_price: formData.cost_price ? Number(formData.cost_price) : null,
+      };
 
-    onSave(productData);
+      if (product) {
+        await updateProduct(payload);
+        toast({
+          title: "Success",
+          description: "Product updated successfully",
+          variant: "success",
+        });
+      } else {
+        await addProduct(payload);
+        toast({
+          title: "Success",
+          description: "Product added successfully",
+          variant: "success",
+        });
+      }
+      
+      onClose();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save product",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleChange = (field: keyof Product, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    
+    // Clear error when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+      setErrors(prev => ({
+        ...prev,
+        [field]: ''
+      }));
     }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setErrors(prev => ({
+          ...prev,
+          product_image: 'Please select an image file'
+        }));
+        return;
+      }
+      
+      // Validate file size (2MB limit)
+      if (file.size > 2 * 1024 * 1024) {
+        setErrors(prev => ({
+          ...prev,
+          product_image: 'Image size must be less than 2MB'
+        }));
+        return;
+      }
+
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        handleChange('product_image', e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const addVariation = () => {
+    if (newVariationType && newVariationValue) {
+      const newVariation: ProductVariation = {
+        id: Date.now().toString(),
+        type: newVariationType,
+        value: newVariationValue,
+      };
+      setVariations([...variations, newVariation]);
+      setNewVariationType('');
+      setNewVariationValue('');
+    }
+  };
+
+  const removeVariation = (id: string) => {
+    setVariations(variations.filter(v => v.id !== id));
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
+      <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto">
+        <DialogHeader className="border-b pb-4">
+          <DialogTitle className="flex items-center gap-2 text-2xl">
+            <Package className="h-6 w-6 text-orange-500" />
             {product ? 'Edit Product' : 'Add New Product'}
           </DialogTitle>
-          <DialogDescription>
-            {product ? 'Update product information' : 'Add a new product to your inventory'}
+          <DialogDescription className="text-base">
+            {product ? 'Update product information and pricing details' : 'Add a new product to your inventory catalog'}
           </DialogDescription>
         </DialogHeader>
 
-        <motion.form
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          onSubmit={handleSubmit}
-          className="space-y-6"
-        >
-          {/* Product Image */}
-          <div className="space-y-2">
-            <Label>Product Image</Label>
-            <div className="flex items-center gap-4">
-              <div className="w-20 h-20 border-2 border-dashed border-border rounded-lg flex items-center justify-center bg-muted/50">
-                {formData.image ? (
-                  <img
-                    src={formData.image}
-                    alt="Product"
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                ) : (
-                  <Upload className="w-6 h-6 text-muted-foreground" />
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Basic Information */}
+          <div className="space-y-6">
+            <h3 className="text-xl font-semibold flex items-center gap-2 text-gray-800 dark:text-gray-200 border-b pb-2">
+              <Package className="h-5 w-5 text-blue-500" />
+              Basic Information
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="product_code">Product Code *</Label>
+                <Input
+                  id="product_code"
+                  value={formData.product_code || ''}
+                  onChange={(e) => handleChange('product_code', e.target.value)}
+                  placeholder="Enter product code"
+                  className={errors.product_code ? 'border-red-500' : ''}
+                  readOnly={!!product} // Read-only for update
+                />
+                {errors.product_code && (
+                  <p className="text-sm text-red-500">{errors.product_code}</p>
                 )}
               </div>
-              <Button type="button" variant="outline" size="sm">
-                <Upload className="w-4 h-4 mr-2" />
-                Upload Image
-              </Button>
-            </div>
-          </div>
 
-          {/* Basic Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                             <div className="space-y-2">
+                 <Label htmlFor="product_brand">Brand *</Label>
+                 <div className="flex gap-2">
+                   <Select
+                     value={!isTypingBrand ? (formData.product_brand || '') : ''}
+                     onValueChange={(value) => {
+                       handleChange('product_brand', value);
+                       setIsTypingBrand(false);
+                       setBrandInputValue('');
+                     }}
+                     disabled={isTypingBrand}
+                   >
+                     <SelectTrigger className={`flex-1 ${errors.product_brand ? 'border-red-500' : ''}`}>
+                       <SelectValue placeholder="Select existing brand" />
+                     </SelectTrigger>
+                     <SelectContent>
+                       {availableBrands.map((brand) => (
+                         <SelectItem key={brand} value={brand}>
+                           {brand}
+                         </SelectItem>
+                       ))}
+                     </SelectContent>
+                   </Select>
+                   <Input
+                     placeholder="Or type new brand"
+                     value={brandInputValue}
+                     onChange={(e) => {
+                       const value = e.target.value;
+                       setBrandInputValue(value);
+                       handleChange('product_brand', value);
+                       setIsTypingBrand(value.length > 0);
+                     }}
+                     onFocus={() => setIsTypingBrand(true)}
+                     onBlur={() => {
+                       if (brandInputValue.length === 0) {
+                         setIsTypingBrand(false);
+                       }
+                     }}
+                     className={`flex-1 ${errors.product_brand ? 'border-red-500' : ''}`}
+                   />
+                 </div>
+                 {errors.product_brand && (
+                   <p className="text-sm text-red-500">{errors.product_brand}</p>
+                 )}
+               </div>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="name">Product Name *</Label>
+              <Label htmlFor="product_name">Product Name *</Label>
               <Input
-                id="name"
-                value={formData.name || ''}
-                onChange={(e) => handleChange('name', e.target.value)}
+                id="product_name"
+                value={formData.product_name || ''}
+                onChange={(e) => handleChange('product_name', e.target.value)}
                 placeholder="Enter product name"
-                className={errors.name ? 'border-destructive' : ''}
+                className={errors.product_name ? 'border-red-500' : ''}
               />
-              {errors.name && (
-                <p className="text-sm text-destructive">{errors.name}</p>
+              {errors.product_name && (
+                <p className="text-sm text-red-500">{errors.product_name}</p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="sku">SKU *</Label>
-              <Input
-                id="sku"
-                value={formData.sku || ''}
-                onChange={(e) => handleChange('sku', e.target.value)}
-                placeholder="Enter SKU"
-                className={errors.sku ? 'border-destructive' : ''}
+              <Label htmlFor="description">Product Description</Label>
+              <Textarea
+                id="description"
+                value={formData.description || ''}
+                onChange={(e) => handleChange('description', e.target.value)}
+                placeholder="Enter product description"
+                rows={3}
               />
-              {errors.sku && (
-                <p className="text-sm text-destructive">{errors.sku}</p>
-              )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="category">Category *</Label>
-              <Select
-                value={formData.category || ''}
-                onValueChange={(value) => handleChange('category', value)}
-              >
-                <SelectTrigger className={errors.category ? 'border-destructive' : ''}>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.category && (
-                <p className="text-sm text-destructive">{errors.category}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="supplier">Supplier *</Label>
-              <Select
-                value={formData.supplier || ''}
-                onValueChange={(value) => handleChange('supplier', value)}
-              >
-                <SelectTrigger className={errors.supplier ? 'border-destructive' : ''}>
-                  <SelectValue placeholder="Select supplier" />
-                </SelectTrigger>
-                <SelectContent>
-                  {suppliers.map((supplier) => (
-                    <SelectItem key={supplier} value={supplier}>
-                      {supplier}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.supplier && (
-                <p className="text-sm text-destructive">{errors.supplier}</p>
+              <Label htmlFor="product_image">Product Image</Label>
+              <div className="flex items-center gap-4">
+                <div className="w-20 h-20 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
+                  {formData.product_image ? (
+                    <img
+                      src={formData.product_image}
+                      alt="Product preview"
+                      className="w-full h-full object-cover rounded-lg"
+                    />
+                  ) : (
+                    <Upload className="w-8 h-8 text-gray-400" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <Input
+                    id="product_image"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById('product_image')?.click()}
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload Image
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Max size: 2MB. Supported formats: JPG, PNG, GIF
+                  </p>
+                </div>
+              </div>
+              {errors.product_image && (
+                <p className="text-sm text-red-500">{errors.product_image}</p>
               )}
             </div>
           </div>
 
-          {/* Pricing and Stock */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="price">Price (OMR) *</Label>
-              <Input
-                id="price"
-                type="number"
-                step="0.001"
-                value={formData.price || ''}
-                onChange={(e) => handleChange('price', parseFloat(e.target.value) || 0)}
-                placeholder="0.000"
-                className={errors.price ? 'border-destructive' : ''}
-              />
-              {errors.price && (
-                <p className="text-sm text-destructive">{errors.price}</p>
-              )}
-            </div>
+          {/* Additional Information */}
+          <div className="space-y-6">
+            <h3 className="text-xl font-semibold flex items-center gap-2 text-gray-800 dark:text-gray-200 border-b pb-2">
+              <Calendar className="h-5 w-5 text-blue-500" />
+              Additional Information
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="product_weight">Weight *</Label>
+                <Input
+                  id="product_weight"
+                  type="number"
+                  value={formData.product_weight || ''}
+                  onChange={(e) => handleChange('product_weight', e.target.value)}
+                  placeholder="0"
+                  min="0"
+                  step="0.01"
+                  className={errors.product_weight ? 'border-red-500' : ''}
+                />
+                {errors.product_weight && (
+                  <p className="text-sm text-red-500">{errors.product_weight}</p>
+                )}
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="stock">Current Stock *</Label>
-              <Input
-                id="stock"
-                type="number"
-                value={formData.stock || ''}
-                onChange={(e) => handleChange('stock', parseInt(e.target.value) || 0)}
-                placeholder="0"
-                className={errors.stock ? 'border-destructive' : ''}
-              />
-              {errors.stock && (
-                <p className="text-sm text-destructive">{errors.stock}</p>
-              )}
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="product_unit">Unit *</Label>
+                <Select
+                  value={formData.product_unit || ''}
+                  onValueChange={(value) => handleChange('product_unit', value)}
+                >
+                  <SelectTrigger className={errors.product_unit ? 'border-red-500' : ''}>
+                    <SelectValue placeholder="Select unit" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PRODUCT_UNITS.map((unit) => (
+                      <SelectItem key={unit} value={unit}>
+                        {unit}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.product_unit && (
+                  <p className="text-sm text-red-500">{errors.product_unit}</p>
+                )}
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="minStock">Minimum Stock *</Label>
-              <Input
-                id="minStock"
-                type="number"
-                value={formData.minStock || ''}
-                onChange={(e) => handleChange('minStock', parseInt(e.target.value) || 0)}
-                placeholder="0"
-                className={errors.minStock ? 'border-destructive' : ''}
-              />
-              {errors.minStock && (
-                <p className="text-sm text-destructive">{errors.minStock}</p>
+              <div className="space-y-2">
+                <Label>Availability</Label>
+                <RadioGroup
+                  value={formData.availability || 'online'}
+                  onValueChange={(value) => handleChange('availability', value)}
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="online" id="online" />
+                    <Label htmlFor="online">Online</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="offline" id="offline" />
+                    <Label htmlFor="offline">Offline</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+            </div>
+          </div>
+
+          {/* Pricing Information */}
+          <div className="space-y-6">
+            <h3 className="text-xl font-semibold flex items-center gap-2 text-gray-800 dark:text-gray-200 border-b pb-2">
+              <Download className="h-5 w-5 text-green-500" />
+              Pricing Information
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="unit_price_shop">Unit Price (Shop) *</Label>
+                <Input
+                  id="unit_price_shop"
+                  type="number"
+                  value={formData.unit_price_shop || 0}
+                  onChange={(e) => handleChange('unit_price_shop', Number(e.target.value))}
+                  placeholder="0.00"
+                  min="0"
+                  step="0.01"
+                  className={errors.unit_price_shop ? 'border-red-500' : ''}
+                />
+                {errors.unit_price_shop && (
+                  <p className="text-sm text-red-500">{errors.unit_price_shop}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="unit_price_customer">Unit Price (Customer) *</Label>
+                <Input
+                  id="unit_price_customer"
+                  type="number"
+                  value={formData.unit_price_customer || 0}
+                  onChange={(e) => handleChange('unit_price_customer', Number(e.target.value))}
+                  placeholder="0.00"
+                  min="0"
+                  step="0.01"
+                  className={errors.unit_price_customer ? 'border-red-500' : ''}
+                />
+                {errors.unit_price_customer && (
+                  <p className="text-sm text-red-500">{errors.unit_price_customer}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cost_price">Cost Price</Label>
+                <Input
+                  id="cost_price"
+                  type="number"
+                  value={formData.cost_price || 0}
+                  onChange={(e) => handleChange('cost_price', Number(e.target.value))}
+                  placeholder="0.00"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Stock Information (UI only) */}
+          <div className="space-y-6">
+            <h3 className="text-xl font-semibold flex items-center gap-2 text-gray-800 dark:text-gray-200 border-b pb-2">
+              <Package className="h-5 w-5 text-yellow-600" />
+              Stock Information
+            </h3>
+            <p className="text-sm text-muted-foreground bg-gray-100 dark:bg-gray-800 p-3 rounded-md">
+              <strong>Note:</strong> Stock information will be managed separately through the inventory management system.
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 opacity-50">
+              <div className="space-y-2">
+                <Label htmlFor="total_stock">Total Stock</Label>
+                <Input
+                  id="total_stock"
+                  type="number"
+                  value={formData.total_stock || 0}
+                  onChange={(e) => handleChange('total_stock', Number(e.target.value))}
+                  placeholder="0"
+                  min="0"
+                  disabled
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="warehouse_stock">Warehouse Stock</Label>
+                <Input
+                  id="warehouse_stock"
+                  type="number"
+                  value={formData.warehouse_stock || 0}
+                  onChange={(e) => handleChange('warehouse_stock', Number(e.target.value))}
+                  placeholder="0"
+                  min="0"
+                  disabled
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="sold_stock">Sold Stock</Label>
+                <Input
+                  id="sold_stock"
+                  type="number"
+                  value={formData.sold_stock || 0}
+                  onChange={(e) => handleChange('sold_stock', Number(e.target.value))}
+                  placeholder="0"
+                  min="0"
+                  disabled
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Product Variations (UI only) */}
+          <div className="space-y-6">
+            <h3 className="text-xl font-semibold flex items-center gap-2 text-gray-800 dark:text-gray-200 border-b pb-2">
+              <Plus className="h-5 w-5 text-purple-500" />
+              Product Variations
+            </h3>
+            <p className="text-sm text-muted-foreground bg-gray-100 dark:bg-gray-800 p-3 rounded-md">
+              <strong>Coming Soon:</strong> Variation management will be available in future updates for color, size, material, and other product attributes.
+            </p>
+            
+            <div className="space-y-4">
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border">
+                <h4 className="font-medium mb-3 text-gray-700 dark:text-gray-300">Add Variation</h4>
+                <div className="flex gap-3">
+                  <Select value={newVariationType} onValueChange={setNewVariationType}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {VARIATION_TYPES.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type.charAt(0).toUpperCase() + type.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    placeholder="Enter variation value"
+                    value={newVariationValue}
+                    onChange={(e) => setNewVariationValue(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={addVariation}
+                    disabled={!newVariationType || !newVariationValue}
+                    className="px-4"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add
+                  </Button>
+                </div>
+              </div>
+
+              {variations.length > 0 && (
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border">
+                  <h4 className="font-medium mb-3 text-gray-700 dark:text-gray-300">Current Variations</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {variations.map((variation) => (
+                      <Badge 
+                        key={variation.id} 
+                        variant="secondary" 
+                        className="flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                      >
+                        <span className="font-medium">{variation.type}:</span>
+                        <span>{variation.value}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeVariation(variation.id)}
+                          className="ml-1 hover:text-red-500 transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
           </div>
 
-          {/* Description */}
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={formData.description || ''}
-              onChange={(e) => handleChange('description', e.target.value)}
-              placeholder="Enter product description"
-              rows={3}
-            />
-          </div>
-
-          {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onClose}>
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-4 pt-8 border-t border-gray-200 dark:border-gray-700">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={onClose}
+              className="px-6 py-2"
+            >
               Cancel
             </Button>
-            <Button type="submit" className="bg-gradient-primary">
-              {product ? 'Update Product' : 'Add Product'}
+            <Button 
+              type="submit" 
+              disabled={isLoading}
+              className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 px-8 py-2 font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+            >
+              {isLoading ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Saving...
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Plus className="w-4 h-4" />
+                  {product ? 'Update Product' : 'Add Product'}
+                </div>
+              )}
             </Button>
           </div>
-        </motion.form>
+        </form>
       </DialogContent>
     </Dialog>
   );

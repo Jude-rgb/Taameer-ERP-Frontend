@@ -18,27 +18,27 @@
     --popover: 0 0% 100%;
     --popover-foreground: 262 10% 20%;
 
-    /* Modern brand colors - Purple gradient theme */
-    --primary: 262 83% 58%;
-    --primary-hover: 262 83% 50%;
+    /* Modern brand colors - Orange and Teal theme */
+    --primary: 33 100% 49%;
+    --primary-hover: 33 100% 45%;
     --primary-foreground: 0 0% 98%;
-    --primary-glow: 262 70% 70%;
+    --primary-glow: 33 100% 55%;
 
     /* Secondary Colors */
-    --secondary: 262 20% 95%;
-    --secondary-hover: 262 20% 90%;
-    --secondary-foreground: 262 10% 20%;
+    --secondary: 175 49% 39%;
+    --secondary-hover: 175 49% 35%;
+    --secondary-foreground: 0 0% 98%;
 
     /* Muted Colors */
     --muted: 262 5% 96%;
     --muted-foreground: 262 5% 45%;
 
     /* Accent Colors */
-    --accent: 262 10% 94%;
+    --accent: 33 20% 95%;
     --accent-foreground: 262 10% 20%;
     --accent-blue: 220 100% 60%;
-    --accent-orange: 25 95% 55%;
-    --accent-teal: 180 100% 45%;
+    --accent-orange: 33 100% 49%;
+    --accent-teal: 175 49% 39%;
     --accent-pink: 320 85% 65%;
 
     /* Status Colors */
@@ -52,37 +52,38 @@
     --info-foreground: 0 0% 98%;
 
     /* Border & Input Colors */
-    --border: 262 5% 90%;
-    --input: 262 5% 92%;
-    --ring: 262 83% 58%;
+    --border: 33 10% 85%;
+    --input: 33 10% 90%;
+    --ring: 33 100% 49%;
 
     /* Modern Sidebar with glassmorphism */
-    --sidebar-background: hsl(262 15% 15% / 0.95);
+    --sidebar-background: hsl(33 15% 15% / 0.95);
     --sidebar-foreground: hsl(0 0% 90%);
-    --sidebar-primary: hsl(262 83% 58%);
+    --sidebar-primary: hsl(33 100% 49%);
     --sidebar-primary-foreground: hsl(0 0% 98%);
-    --sidebar-accent: hsl(262 83% 58% / 0.1);
+    --sidebar-accent: hsl(33 100% 49% / 0.1);
     --sidebar-accent-foreground: hsl(0 0% 95%);
     --sidebar-border: hsl(0 0% 100% / 0.1);
-    --sidebar-ring: hsl(262 83% 58%);
+    --sidebar-ring: hsl(33 100% 49%);
 
     /* Design Tokens */
     --radius: 0.75rem;
-    --chart-1: 262 83% 58%;
-    --chart-2: 142 76% 36%;
+    --chart-1: 33 100% 49%;
+    --chart-2: 175 49% 39%;
     --chart-3: 38 92% 50%;
     --chart-4: 0 84% 60%;
     --chart-5: 280 100% 70%;
 
     /* Modern gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(262 83% 58%), hsl(262 70% 70%));
+    --gradient-primary: linear-gradient(135deg, hsl(33 100% 49%), hsl(33 100% 55%));
+    --gradient-secondary: linear-gradient(135deg, hsl(175 49% 39%), hsl(175 49% 45%));
     --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 70% 45%));
     --gradient-warning: linear-gradient(135deg, hsl(38 92% 50%), hsl(45 100% 60%));
     --gradient-blue: linear-gradient(135deg, hsl(220 100% 60%), hsl(220 85% 70%));
-    --gradient-orange: linear-gradient(135deg, hsl(25 95% 55%), hsl(30 100% 65%));
-    --gradient-teal: linear-gradient(135deg, hsl(180 100% 45%), hsl(180 85% 55%));
+    --gradient-orange: linear-gradient(135deg, hsl(33 100% 49%), hsl(33 100% 55%));
+    --gradient-teal: linear-gradient(135deg, hsl(175 49% 39%), hsl(175 49% 45%));
     --gradient-pink: linear-gradient(135deg, hsl(320 85% 65%), hsl(320 70% 75%));
-    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(262 5% 98%));
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(33 5% 98%));
     --gradient-glass: linear-gradient(135deg, hsl(0 0% 100% / 0.1), hsl(0 0% 100% / 0.05));
 
     /* Glassmorphism effects */
@@ -97,8 +98,8 @@
     --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.1), 0 8px 10px -6px hsl(0 0% 0% / 0.1);
     --shadow-card: 0 4px 20px hsl(0 0% 0% / 0.08);
     --shadow-glass: 0 8px 32px hsl(0 0% 0% / 0.12);
-    --shadow-elegant: 0 10px 30px -10px hsl(262 83% 58% / 0.3);
-    --shadow-glow: 0 0 40px hsl(262 70% 70% / 0.4);
+    --shadow-elegant: 0 10px 30px -10px hsl(33 100% 49% / 0.3);
+    --shadow-glow: 0 0 40px hsl(33 100% 55% / 0.4);
 
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -119,15 +120,15 @@
     --popover-foreground: 0 0% 95%;
 
     /* Modern dark theme colors */
-    --primary: 262 83% 58%;
-    --primary-hover: 262 83% 65%;
+    --primary: 33 100% 49%;
+    --primary-hover: 33 100% 55%;
     --primary-foreground: 0 0% 98%;
-    --primary-glow: 262 70% 70%;
+    --primary-glow: 33 100% 55%;
 
     /* Secondary Colors */
-    --secondary: 262 15% 15%;
-    --secondary-hover: 262 15% 18%;
-    --secondary-foreground: 0 0% 90%;
+    --secondary: 175 49% 39%;
+    --secondary-hover: 175 49% 45%;
+    --secondary-foreground: 0 0% 98%;
 
     /* Muted Colors */
     --muted: 262 15% 15%;
@@ -137,7 +138,7 @@
     --accent: 262 15% 15%;
     --accent-foreground: 0 0% 90%;
 
-    /* Status Colors */
+    /* Status Colors - Enhanced for dark mode with better contrast */
     --success: 142 76% 45%;
     --success-foreground: 0 0% 98%;
     --warning: 38 92% 60%;
@@ -146,9 +147,9 @@
     --destructive-foreground: 0 0% 98%;
 
     /* Border & Input Colors */
-    --border: 262 15% 20%;
-    --input: 262 15% 20%;
-    --ring: 262 83% 58%;
+    --border: 33 15% 20%;
+    --input: 33 15% 20%;
+    --ring: 33 100% 49%;
 
     /* Dark glassmorphism */
     --glass-background: hsl(262 15% 10% / 0.8);
@@ -156,20 +157,21 @@
     --glass-shadow: 0 8px 32px hsl(0 0% 0% / 0.3);
 
     /* Sidebar dark mode with glass effect */
-    --sidebar-background: hsl(262 20% 12% / 0.95);
+    --sidebar-background: hsl(33 20% 12% / 0.95);
     --sidebar-foreground: hsl(0 0% 90%);
-    --sidebar-primary: hsl(262 83% 58%);
+    --sidebar-primary: hsl(33 100% 49%);
     --sidebar-primary-foreground: hsl(0 0% 98%);
-    --sidebar-accent: hsl(262 83% 58% / 0.15);
+    --sidebar-accent: hsl(33 100% 49% / 0.15);
     --sidebar-accent-foreground: hsl(0 0% 95%);
     --sidebar-border: hsl(0 0% 100% / 0.1);
-    --sidebar-ring: hsl(262 83% 58%);
+    --sidebar-ring: hsl(33 100% 49%);
 
-    /* Dark Mode Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(262 83% 58%), hsl(262 70% 70%));
-    --gradient-card: linear-gradient(135deg, hsl(262 15% 10%), hsl(262 13% 12%));
-    --shadow-glow: 0 0 40px hsl(262 83% 58% / 0.25);
-    --shadow-elegant: 0 10px 30px -10px hsl(262 83% 58% / 0.3);
+    /* Dark Mode Gradients - Enhanced for better contrast */
+    --gradient-primary: linear-gradient(135deg, hsl(33 100% 49%), hsl(33 100% 55%));
+    --gradient-secondary: linear-gradient(135deg, hsl(175 49% 39%), hsl(175 49% 45%));
+    --gradient-card: linear-gradient(135deg, hsl(33 15% 10%), hsl(33 13% 12%));
+    --shadow-glow: 0 0 40px hsl(33 100% 49% / 0.25);
+    --shadow-elegant: 0 10px 30px -10px hsl(33 100% 49% / 0.3);
   }
 
   /* RTL Support */
@@ -189,5 +191,36 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Custom utility classes for dashboard cards */
+@layer utilities {
+  .dashboard-card-hover {
+    @apply transition-all duration-300 hover:brightness-110 hover:shadow-2xl hover:scale-105;
+  }
+  
+  .dashboard-card-dark {
+    @apply bg-gray-800 hover:bg-gray-700;
+  }
+  
+  .dashboard-card-light {
+    @apply bg-gradient-to-r from-white/30 to-white/10 backdrop-blur-sm hover:bg-white/40;
+  }
+  
+  .status-badge-done {
+    @apply bg-green-500 text-white;
+  }
+  
+  .status-badge-pending {
+    @apply bg-yellow-500 text-black;
+  }
+  
+  .status-badge-partially {
+    @apply bg-orange-500 text-white;
+  }
+  
+  .status-badge-overdue {
+    @apply bg-red-500 text-white;
   }
 }

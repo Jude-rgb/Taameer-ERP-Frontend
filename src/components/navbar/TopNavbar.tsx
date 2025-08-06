@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { NotificationDropdown } from './NotificationDropdown';
 import { ProfileSettingsModal } from '@/components/profile/ProfileSettingsModal';
+import { LogoutButton } from '@/components/auth/LogoutButton';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useThemeStore } from '@/store/useThemeStore';
 import { useSystemStore } from '@/store/useSystemStore';
@@ -32,8 +33,8 @@ export const TopNavbar = () => {
          <div className="flex items-center gap-4">
             {/* Company Info */}
             <div className="hidden md:block">
-              <h2 className="font-semibold text-foreground">{settings.companyName}</h2>
-              <p className="text-xs text-muted-foreground">{settings.companySlogan}</p>
+              <h2 className="font-semibold text-foreground">Taameer</h2>
+              <p className="text-xs text-muted-foreground">Conststruction Materials</p>
             </div>
             
             <div className="relative flex-1 max-w-md ml-4">
@@ -81,18 +82,18 @@ export const TopNavbar = () => {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={user?.avatar} alt={user?.name} />
-                  <AvatarFallback className="bg-primary text-primary-foreground">
-                    {user?.name?.split(' ').map(n => n[0]).join('').toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
+                                 <Avatar className="h-10 w-10">
+                   <AvatarImage src={user?.avatar} alt={user?.full_name} />
+                   <AvatarFallback className="bg-primary text-primary-foreground">
+                     {user?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase()}
+                   </AvatarFallback>
+                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{user?.name}</p>
+                  <p className="text-sm font-medium leading-none">{user?.full_name}</p>
                   <p className="text-xs leading-none text-muted-foreground">
                     {user?.email}
                   </p>
@@ -111,8 +112,14 @@ export const TopNavbar = () => {
                 Preferences
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={logout} className="text-destructive">
-                Log out
+              <DropdownMenuItem asChild>
+                <LogoutButton 
+                  variant="ghost" 
+                  className="w-full justify-start text-destructive hover:text-destructive"
+                  showIcon={true}
+                >
+                  Log out
+                </LogoutButton>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
