@@ -42,23 +42,21 @@ export function ActionButton({
   };
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant={variant}
-            size={size}
-            onClick={onClick}
-            disabled={disabled}
-            className={`hover:scale-105 transition-all duration-200 ${getColorClasses()} ${className}`}
-          >
-            <Icon className="w-4 h-4" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>{tooltip}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant={variant}
+          size={size}
+          onClick={onClick}
+          disabled={disabled}
+          className={`hover:scale-105 transition-all duration-200 ${getColorClasses()} ${className}`}
+        >
+          <Icon className="w-4 h-4" />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>{tooltip}</p>
+      </TooltipContent>
+    </Tooltip>
   );
 } 

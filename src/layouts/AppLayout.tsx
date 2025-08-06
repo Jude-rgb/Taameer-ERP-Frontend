@@ -30,22 +30,24 @@ export const AppLayout = () => {
 
   return (
     <SidebarProvider>
-      <div className={`min-h-screen flex w-full bg-gradient-to-br from-background via-muted/20 to-background ${isRTL ? 'flex-row-reverse' : ''}`}>
+      <div className={`min-h-screen flex w-full bg-background ${isRTL ? 'flex-row-reverse' : ''}`}>
+        {/* Sidebar - Hidden on mobile by default */}
         <div className={`${isRTL ? 'order-2' : 'order-1'}`}>
           <AppSidebar />
         </div>
         
-        <div className={`flex-1 flex flex-col ${isRTL ? 'order-1' : 'order-2'}`}>
+        {/* Main content area */}
+        <div className={`flex-1 flex flex-col min-w-0 ${isRTL ? 'order-1' : 'order-2'}`}>
           <TopNavbar />
           
-          <main className="flex-1 overflow-auto">
+          <main className="flex-1 overflow-auto bg-muted/30">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
               className="h-full"
             >
-              <div className="p-6">
+              <div className="w-full px-0">
                 <Outlet />
               </div>
             </motion.div>

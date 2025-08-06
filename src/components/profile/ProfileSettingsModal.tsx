@@ -185,14 +185,14 @@ export const ProfileSettingsModal = ({ open, onOpenChange }: ProfileSettingsModa
           <TabsList className="grid w-full grid-cols-2 bg-muted/50 p-1 rounded-xl border border-border/50 h-15">
             <TabsTrigger 
               value="profile" 
-              className="flex items-center justify-center gap-2 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=active]:font-medium data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground transition-all duration-300 rounded-lg px-4 py-2 text-sm font-medium h-10"
+              className="flex items-center justify-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=active]:font-medium data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground data-[state=inactive]:hover:bg-accent/50 transition-all duration-300 rounded-lg px-4 py-2 text-sm font-medium h-10"
             >
               <User className="w-4 h-4" />
               Edit Profile
             </TabsTrigger>
             <TabsTrigger 
               value="password" 
-              className="flex items-center justify-center gap-2 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=active]:font-medium data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground transition-all duration-300 rounded-lg px-4 py-2 text-sm font-medium h-10"
+              className="flex items-center justify-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=active]:font-medium data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground data-[state=inactive]:hover:bg-accent/50 transition-all duration-300 rounded-lg px-4 py-2 text-sm font-medium h-10"
             >
               <Lock className="w-4 h-4" />
               Change Password

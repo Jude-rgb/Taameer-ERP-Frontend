@@ -334,39 +334,11 @@ export const Products = () => {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="flex flex-col md:flex-row md:items-center justify-between gap-4"
       >
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Products</h1>
-          <p className="text-muted-foreground">
-            Manage your inventory and product catalog
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <Button 
-            variant="outline"
-            onClick={() => setIsFilterOpen(true)}
-            className="flex items-center gap-2"
-          >
-            <Filter className="h-4 w-4" />
-            Filter
-          </Button>
-          <Button 
-            variant="outline"
-            onClick={handleExportToExcel}
-            className="flex items-center gap-2"
-          >
-            <Download className="h-4 w-4" />
-            Export to Excel
-          </Button>
-          <Button 
-            onClick={handleAddProduct}
-            className="bg-gradient-primary hover:scale-105 transition-all duration-200"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Add Product
-          </Button>
-        </div>
+        <h1 className="text-3xl font-bold tracking-tight mb-2">Products</h1>
+        <p className="text-muted-foreground">
+          Manage your inventory and product catalog
+        </p>
       </motion.div>
 
       {/* Active Filters Display */}
@@ -399,35 +371,58 @@ export const Products = () => {
       )}
 
       {/* Products Table */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.5 }}
-      >
-        <Card className="border-0 bg-gradient-card">
-          <CardHeader>
-            <CardTitle>Product Inventory</CardTitle>
-            <CardDescription>
-              {filteredProducts.length} products in your catalog
-              {filters.status || filters.brand ? ' (filtered)' : ''}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <DataTable
-              data={filteredProducts}
-              columns={columns}
-              searchKey="product_name"
-              searchPlaceholder="Search products by brand, code, or name..."
-              onRowSelect={setSelectedProductIds}
-              onRowClick={handleRowClick}
-              emptyMessage="No products available."
-              idKey="id"
-              pageSizeOptions={[10, 20, 50, 100]}
-              defaultPageSize={10}
-            />
-          </CardContent>
-        </Card>
-      </motion.div>
+      <Card className="border-0 bg-card">
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <CardTitle className="mb-2">Product Inventory</CardTitle>
+              <CardDescription>
+                {filteredProducts.length} products in your catalog
+                {filters.status || filters.brand ? ' (filtered)' : ''}
+              </CardDescription>
+            </div>
+            <div className="flex gap-3">
+              <Button 
+                variant="outline"
+                onClick={() => setIsFilterOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <Filter className="h-4 w-4" />
+                Filter
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={handleExportToExcel}
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Export to Excel
+              </Button>
+              <Button 
+                onClick={handleAddProduct}
+                className="bg-primary hover:bg-primary-hover hover:scale-105 transition-all duration-200"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Product
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <DataTable
+            data={filteredProducts}
+            columns={columns}
+            searchKey="product_name"
+            searchPlaceholder="Search products by brand, code, or name..."
+            onRowSelect={setSelectedProductIds}
+            onRowClick={handleRowClick}
+            emptyMessage="No products available."
+            idKey="id"
+            pageSizeOptions={[10, 20, 50, 100]}
+            defaultPageSize={10}
+          />
+        </CardContent>
+      </Card>
 
       {/* Filter Modal */}
       <ProductFilter
