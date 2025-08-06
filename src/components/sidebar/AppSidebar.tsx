@@ -5,7 +5,7 @@ import { LayoutDashboard, Package, FileText, Receipt, Truck, Users, BarChart3, S
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, useSidebar, SidebarHeader, SidebarTrigger } from '@/components/ui/sidebar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSystemStore } from '@/store/useSystemStore';
 import { cn } from '@/lib/utils';
 const menuItems = [{
@@ -96,30 +96,38 @@ export function AppSidebar() {
     <div className="relative">
       <Sidebar 
         className={cn(
-          "border-r bg-background transition-all duration-300 ease-in-out",
-          !open ? "w-16" : "w-64"
+          "border-r bg-card shadow-sm transition-all duration-300 ease-in-out",
+          !open ? "w-16" : "w-64",
+          "hidden md:flex", // Hide on mobile, show on tablet+
         )}
       >
-        <SidebarHeader className="p-4 border-b">
+        <SidebarHeader className="p-4 border-b border-border/50">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-15 h-8 flex items-center justify-center">
-               <img src="/saas-uploads/Logo-01.png"alt="logo" className="w-15 h-8 object-cover" />
+              <div className="w-8 h-8 flex items-center justify-center">
+                {open ? (
+                  <img src="/saas-uploads/Logo-01.png" alt="Logo" className="w-auto h-8 object-contain" />
+                ) : (
+                  <Building2 className="w-6 h-6 text-primary" />
+                )}
               </div>
-              
+              {open && (
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="flex flex-col"
+                >
+                  <span className="text-sm font-semibold text-foreground">{settings?.companyName || 'SaaS Platform'}</span>
+                  <span className="text-xs text-muted-foreground">Invoice System</span>
+                </motion.div>
+              )}
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setOpen(!open)}
-              className="w-8 h-8 hover:bg-accent"
-            >
-              <Menu className="w-4 h-4" />
-            </Button>
+            <SidebarTrigger className="w-8 h-8 hover:bg-accent/50" />
           </div>
         </SidebarHeader>
 
-        <SidebarContent className="p-2">
+        <SidebarContent className="p-2 overflow-y-auto">
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1">
@@ -133,13 +141,13 @@ export function AppSidebar() {
                         >
                            <CollapsibleTrigger asChild>
                              <div>
-                               <SidebarMenuButton 
-                                className={cn(
-                                  "w-full justify-between rounded-lg h-10 transition-colors hover:bg-accent",
-                                  (isGroupActive(item.items) || isSubItemActive(item.items)) && "bg-primary text-primary-foreground hover:bg-primary/90",
-                                  !open && "justify-center px-2"
-                                )}
-                              >
+                                <SidebarMenuButton 
+                                 className={cn(
+                                   "w-full justify-between rounded-lg h-10 transition-all duration-200 hover:bg-accent/50 focus-brand",
+                                   (isGroupActive(item.items) || isSubItemActive(item.items)) && "bg-primary text-primary-foreground hover:bg-primary-hover shadow-sm",
+                                   !open && "justify-center px-2"
+                                 )}
+                               >
                                  <div className="flex items-center gap-3">
                                    <item.icon className={cn(
                                      "w-5 h-5 transition-colors",
@@ -165,16 +173,16 @@ export function AppSidebar() {
                                    {item.items.map((subItem) => (
                                      <SidebarMenuSubItem key={subItem.url}>
                                        <div>
-                                         <SidebarMenuSubButton 
-                                           asChild 
-                                           isActive={isActive(subItem.url)}
-                                           className={cn(
-                                             "rounded-lg h-8 transition-colors text-sm",
-                                             isActive(subItem.url) 
-                                               ? "bg-primary text-primary-foreground hover:bg-primary/90" 
-                                               : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                                           )}
-                                         >
+                                          <SidebarMenuSubButton 
+                                            asChild 
+                                            isActive={isActive(subItem.url)}
+                                            className={cn(
+                                              "rounded-lg h-8 transition-all duration-200 text-sm focus-brand",
+                                              isActive(subItem.url) 
+                                                ? "bg-primary text-primary-foreground hover:bg-primary-hover shadow-sm" 
+                                                : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                                            )}
+                                          >
                                           <NavLink to={subItem.url}>
                                              <span className="text-sm">{subItem.title}</span>
                                           </NavLink>
@@ -191,17 +199,17 @@ export function AppSidebar() {
                     ) : (
                        <SidebarTooltip content={item.title}>
                          <div>
-                           <SidebarMenuButton 
-                             asChild 
-                             isActive={isActive(item.url!)}
-                             className={cn(
-                               "rounded-lg h-10 transition-colors",
-                               isActive(item.url!) 
-                                 ? "bg-primary text-primary-foreground hover:bg-primary/90" 
-                                 : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                               !open && "justify-center px-2"
-                             )}
-                           >
+                            <SidebarMenuButton 
+                              asChild 
+                              isActive={isActive(item.url!)}
+                              className={cn(
+                                "rounded-lg h-10 transition-all duration-200 focus-brand",
+                                isActive(item.url!) 
+                                  ? "bg-primary text-primary-foreground hover:bg-primary-hover shadow-sm" 
+                                  : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+                                !open && "justify-center px-2"
+                              )}
+                            >
                              <NavLink to={item.url!}>
                                <item.icon className={cn(
                                  "w-5 h-5 transition-colors",
