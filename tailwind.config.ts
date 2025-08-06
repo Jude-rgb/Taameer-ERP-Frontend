@@ -95,9 +95,9 @@ export default {
 				'gradient-success': 'var(--gradient-success)',
 				'gradient-warning': 'var(--gradient-warning)',
 				'gradient-blue': 'var(--gradient-blue)',
-				'gradient-orange': 'var(--gradient-orange)',
 				'gradient-teal': 'var(--gradient-teal)',
 				'gradient-pink': 'var(--gradient-pink)',
+				'gradient-orange': 'var(--gradient-orange)',
 				'gradient-card': 'var(--gradient-card)',
 				'gradient-glass': 'var(--gradient-glass)'
 			},
