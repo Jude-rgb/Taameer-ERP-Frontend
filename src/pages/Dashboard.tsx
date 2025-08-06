@@ -40,7 +40,7 @@ const item = {
   }
 };
 
-export const Dashboard = () => {
+const Dashboard = () => {
   const { user } = useAuthStore();
   const { toast } = useToast();
   const { theme } = useThemeStore();
@@ -466,3 +466,5 @@ export const Dashboard = () => {
     </div>
   );
 };
+
+export { Dashboard };
