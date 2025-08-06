@@ -391,7 +391,6 @@ export const salesReportData = {
     { name: 'Galvanized Wire 2mm', sales: 4100 },
   ],
 };
-
 export const formatOMRCurrency = (amount: number): string => {
   return `${amount.toFixed(3)} OMR`;
 };

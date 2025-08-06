@@ -1,12 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { authService } from '@/services/auth';
 
 interface User {
-  id: string;
-  name: string;
+  id: number;
+  full_name: string;
   email: string;
-  phone: string;
-  role: 'Super Admin' | 'Admin' | 'Marketing Officer' | 'Warehouse Officer' | 'Accounts';
+  role: string;
   avatar?: string;
 }
 
@@ -20,7 +20,7 @@ interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   forgotPassword: ForgotPasswordState;
-  login: (email: string, password: string) => Promise<boolean>;
+  loginUser: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   updateProfile: (data: Partial<User>) => void;
   changePassword: (oldPassword: string, newPassword: string) => Promise<boolean>;
@@ -28,6 +28,7 @@ interface AuthState {
   verifyOTP: (otp: string) => Promise<boolean>;
   resetPassword: (newPassword: string) => Promise<boolean>;
   resetForgotPassword: () => void;
+  initializeAuth: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -40,23 +41,24 @@ export const useAuthStore = create<AuthState>()(
         email: '',
         otp: '',
       },
-      login: async (email: string, password: string) => {
-        // Dummy authentication
-        if (email === 'admin@company.com' && password === 'admin123') {
-          const user: User = {
-            id: '1',
-            name: 'Ahmed Al-Mansouri',
-            email: 'admin@company.com',
-            phone: '+968 9123 4567',
-            role: 'Super Admin',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face'
-          };
-          set({ user, isAuthenticated: true });
-          return true;
+      loginUser: async (email: string, password: string) => {
+        try {
+          const result = await authService.login(email, password);
+          if (result.success) {
+            set({ 
+              user: result.user, 
+              isAuthenticated: true 
+            });
+            return true;
+          }
+          return false;
+        } catch (error) {
+          console.error('Login error:', error);
+          return false;
         }
-        return false;
       },
       logout: () => {
+        authService.logout();
         set({ user: null, isAuthenticated: false });
       },
       updateProfile: (data: Partial<User>) => {
@@ -114,6 +116,11 @@ export const useAuthStore = create<AuthState>()(
             otp: '',
           }
         }));
+      },
+      initializeAuth: () => {
+        const user = authService.getCurrentUser();
+        const isAuthenticated = authService.isAuthenticated();
+        set({ user, isAuthenticated });
       },
     }),
     {

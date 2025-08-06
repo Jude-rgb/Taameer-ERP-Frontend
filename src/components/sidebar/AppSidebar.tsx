@@ -105,14 +105,10 @@ export function AppSidebar() {
         <SidebarHeader className="p-4 border-b">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Building2 className="w-5 h-5 text-primary-foreground" />
+              <div className="w-15 h-8 flex items-center justify-center">
+               <img src="/saas-uploads/Logo-01.png"alt="logo" className="w-15 h-8 object-cover" />
               </div>
-              {open && (
-                <div>
-                  <h2 className="font-semibold text-sm text-foreground">{settings.companyName}</h2>
-                </div>
-              )}
+              
             </div>
             <Button
               variant="ghost"
