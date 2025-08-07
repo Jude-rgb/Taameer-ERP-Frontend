@@ -17,12 +17,6 @@ export const usePurchaseOrderStore = create((set, get) => ({
   purchasePayments: [],
   isLoading: false,
   error: null,
-  filters: {
-    supplier: null,
-    dateRange: null,
-    paymentStatus: null,
-    purchaseStatus: null,
-  },
 
   // Actions
   fetchPurchaseOrders: async () => {
@@ -129,17 +123,6 @@ export const usePurchaseOrderStore = create((set, get) => ({
     }
   },
 
-  // Set filters
-  setFilters: (filters) => set({ filters: { ...get().filters, ...filters } }),
-  clearFilters: () =>
-    set({
-      filters: {
-        supplier: null,
-        dateRange: null,
-        paymentStatus: null,
-        purchaseStatus: null,
-      },
-    }),
 
   // Clear error
   clearError: () => set({ error: null }),
@@ -152,75 +135,8 @@ export const usePurchaseOrderStore = create((set, get) => ({
       purchasePayments: [],
       isLoading: false,
       error: null,
-      filters: {
-        supplier: null,
-        dateRange: null,
-        paymentStatus: null,
-        purchaseStatus: null,
-      },
     }),
 
-  // Get filtered purchase orders
-  getFilteredPurchaseOrders: () => {
-    const { purchaseOrders, filters } = get();
-
-    let filtered = [...purchaseOrders];
-
-    // Apply supplier filter
-    if (filters.supplier && filters.supplier.trim()) {
-      const supplierFilter = filters.supplier.toLowerCase().trim();
-      filtered = filtered.filter((order) => {
-        const supplier = order.suppliers;
-        if (!supplier) return false;
-
-        if (supplier.supplier_type === "business_type") {
-          return supplier.business_name?.toLowerCase().includes(supplierFilter);
-        } else {
-          const fullName = `${supplier.first_name || ""} ${
-            supplier.last_name || ""
-          }`.trim();
-          return fullName.toLowerCase().includes(supplierFilter);
-        }
-      });
-    }
-
-    // Apply date range filter
-    if (filters.dateRange?.from || filters.dateRange?.to) {
-      filtered = filtered.filter((order) => {
-        const purchaseDate = new Date(order.purchase_date);
-
-        if (filters.dateRange.from && filters.dateRange.to) {
-          const fromDate = new Date(filters.dateRange.from);
-          const toDate = new Date(filters.dateRange.to);
-          return purchaseDate >= fromDate && purchaseDate <= toDate;
-        } else if (filters.dateRange.from) {
-          const fromDate = new Date(filters.dateRange.from);
-          return purchaseDate >= fromDate;
-        } else if (filters.dateRange.to) {
-          const toDate = new Date(filters.dateRange.to);
-          return purchaseDate <= toDate;
-        }
-
-        return true;
-      });
-    }
-
-    // Apply payment status filter
-    if (filters.paymentStatus) {
-      filtered = filtered.filter(
-        (order) => order.payment_status === filters.paymentStatus
-      );
-    }
-
-    // Apply purchase status filter (using stock_status for purchase status)
-    if (filters.purchaseStatus) {
-      filtered = filtered.filter(
-        (order) => order.stock_status === filters.purchaseStatus
-      );
-    }
-
-    return filtered;
-  },
 
   // Get purchase order by ID
   getPurchaseOrderById: (orderId) => {
@@ -228,15 +144,4 @@ export const usePurchaseOrderStore = create((set, get) => ({
     return purchaseOrders.find((order) => order.id === orderId);
   },
 
-  // Get unique suppliers from purchase orders
-  getUniqueSuppliers: () => {
-    const { purchaseOrders } = get();
-    const uniqueSuppliers = new Map();
-    purchaseOrders.forEach(order => {
-      if (order.suppliers) {
-        uniqueSuppliers.set(order.suppliers.id, order.suppliers);
-      }
-    });
-    return Array.from(uniqueSuppliers.values());
-  },
 }));

@@ -1,8 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Plus, 
-  Filter, 
   Edit, 
   Trash2, 
   Package, 
@@ -20,7 +19,7 @@ import { DataTable, Column } from '@/components/ui/data-table';
 import { ActionButton } from '@/components/ui/action-button';
 import { DeleteConfirmModal } from '@/components/modals/DeleteConfirmModal';
 import { PurchaseOrderDetailsModal } from '@/components/modals/PurchaseOrderDetailsModal';
-import PurchaseOrderFilter from '@/components/PurchaseOrderFilter';
+
 import { usePurchaseOrderStore } from '@/store/usePurchaseOrderStore';
 import { useToast } from '@/hooks/use-toast';
 import { formatDate } from '@/utils/formatters';
@@ -54,13 +53,8 @@ export const PurchaseOrders = () => {
   const { 
     purchaseOrders, 
     fetchPurchaseOrders, 
-    getFilteredPurchaseOrders, 
     deletePurchaseOrder,
-    setFilters, 
-    clearFilters, 
-    filters, 
-    isLoading,
-    getUniqueSuppliers
+    isLoading
   } = usePurchaseOrderStore();
   
   const { toast } = useToast();
@@ -69,7 +63,7 @@ export const PurchaseOrders = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedPurchaseOrderIds, setSelectedPurchaseOrderIds] = useState<Set<number | string>>(new Set());
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  
 
   // Helper function to get supplier name - must be defined before useMemo
   const getSupplierName = (supplier: any) => {
@@ -99,10 +93,6 @@ export const PurchaseOrders = () => {
     loadPurchaseOrders();
   }, [fetchPurchaseOrders, toast]);
 
-  // Filter purchase orders based on filters - following same pattern as other pages
-  const filteredPurchaseOrders = useMemo(() => {
-    return getFilteredPurchaseOrders();
-  }, [getFilteredPurchaseOrders]);
 
   const handleEditPurchaseOrder = (purchaseOrder: PurchaseOrder) => {
     console.log('Edit purchase order:', purchaseOrder); // Debug log
@@ -199,19 +189,12 @@ export const PurchaseOrders = () => {
     return `${currencyType} ${numAmount.toFixed(decimalPlaces)}`;
   };
 
-  const handleApplyFilters = (newFilters: any) => {
-    setFilters(newFilters);
-  };
-
-  const handleClearFilters = () => {
-    clearFilters();
-  };
 
 
 
   const handleExportToExcel = async () => {
     try {
-      await exportPurchaseOrdersToExcel(filteredPurchaseOrders);
+      await exportPurchaseOrdersToExcel(purchaseOrders);
       
       toast({
         title: "Success",
@@ -403,44 +386,6 @@ export const PurchaseOrders = () => {
 
 
 
-      {/* Active Filters Display */}
-      {(filters.supplier || filters.dateRange?.from || filters.dateRange?.to || filters.paymentStatus || filters.purchaseStatus) && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-2 flex-wrap"
-        >
-          <span className="text-sm text-muted-foreground">Active filters:</span>
-          {filters.supplier && (
-            <Badge variant="secondary">
-              Supplier: {filters.supplier}
-            </Badge>
-          )}
-          {(filters.dateRange?.from || filters.dateRange?.to) && (
-            <Badge variant="secondary">
-              Date: {filters.dateRange.from || 'Any'} - {filters.dateRange.to || 'Any'}
-            </Badge>
-          )}
-          {filters.paymentStatus && (
-            <Badge variant="secondary">
-              Payment: {filters.paymentStatus}
-            </Badge>
-          )}
-          {filters.purchaseStatus && (
-            <Badge variant="secondary">
-              Purchase: {filters.purchaseStatus}
-            </Badge>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleClearFilters}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            Clear all
-          </Button>
-        </motion.div>
-      )}
 
       <Card className="border-0 bg-card">
         <CardHeader>
@@ -448,19 +393,10 @@ export const PurchaseOrders = () => {
             <div>
               <CardTitle className="mb-2">Purchase Order Management</CardTitle>
               <CardDescription>
-                {filteredPurchaseOrders.length} purchase orders
-                {(filters.supplier || filters.dateRange?.from || filters.dateRange?.to || filters.paymentStatus || filters.purchaseStatus) ? ' (filtered)' : ''}
+                {purchaseOrders.length} purchase orders
               </CardDescription>
             </div>
             <div className="flex gap-3">
-              <Button 
-                variant="outline"
-                onClick={() => setIsFilterOpen(true)}
-                className="flex items-center gap-2"
-              >
-                <Filter className="h-4 w-4" />
-                Filter
-              </Button>
               <Button 
                 variant="outline"
                 onClick={handleExportToExcel}
@@ -480,7 +416,7 @@ export const PurchaseOrders = () => {
         </CardHeader>
         <CardContent>
           <DataTable
-            data={filteredPurchaseOrders}
+            data={purchaseOrders}
             columns={columns}
             searchKey="purchase_no"
             searchPlaceholder="Search purchase orders..."
@@ -503,14 +439,6 @@ export const PurchaseOrders = () => {
         onDelete={handleDetailsDelete}
       />
 
-      <PurchaseOrderFilter
-        isOpen={isFilterOpen}
-        onClose={() => setIsFilterOpen(false)}
-        filters={filters}
-        onApplyFilters={handleApplyFilters}
-        onClearFilters={handleClearFilters}
-        suppliers={getUniqueSuppliers()}
-      />
 
       <DeleteConfirmModal
         isOpen={isDeleteModalOpen}
