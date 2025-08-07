@@ -1,0 +1,31 @@
+[33mcommit 62295a70e7dddad30a0fbf9b30aef9d2364e5ac1[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mTaameer-BMS[m[33m)[m
+Author: Jude-rgb <judetharindu593@gmail.com>
+Date:   Thu Aug 7 04:30:25 2025 +0400
+
+    Add Suppliers page and enhance ProductModal with new units and features
+    
+    - Introduced a new Suppliers page in the routing structure.
+    - Expanded the ProductModal component to include a comprehensive list of product units with descriptions.
+    - Added informational messages in ProductModal indicating upcoming features for product image uploads and availability toggles.
+    - Updated the AppSidebar to group Customers and Suppliers under a single menu item for better organization.
+    - Made minor adjustments to the TopNavbar and SystemSettings for consistency in company branding and layout.
+    - Enhanced the PurchaseOrders page with improved data handling and filtering capabilities, including a new export to Excel feature for purchase orders.
+
+src/App.tsx
+src/components/PurchaseOrderFilter.jsx
+src/components/modals/ProductModal.tsx
+src/components/modals/PurchaseOrderDetailsModal.tsx
+src/components/modals/SupplierDetailsModal.tsx
+src/components/modals/SupplierModal.tsx
+src/components/modals/UserModal.tsx
+src/components/navbar/TopNavbar.tsx
+src/components/sidebar/AppSidebar.tsx
+src/pages/Suppliers.tsx
+src/pages/SystemSettings.tsx
+src/pages/inventory/PurchaseOrders.tsx
+src/services/purchaseOrder.js
+src/services/supplier.js
+src/store/usePurchaseOrderStore.js
+src/store/useSupplierStore.js
+src/store/useSystemStore.ts
+src/utils/exportToExcel.js
