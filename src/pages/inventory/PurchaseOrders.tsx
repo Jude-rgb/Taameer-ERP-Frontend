@@ -1,8 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Plus, 
-  Filter, 
   Edit, 
   Trash2, 
   Package, 
@@ -20,7 +19,7 @@ import { DataTable, Column } from '@/components/ui/data-table';
 import { ActionButton } from '@/components/ui/action-button';
 import { DeleteConfirmModal } from '@/components/modals/DeleteConfirmModal';
 import { PurchaseOrderDetailsModal } from '@/components/modals/PurchaseOrderDetailsModal';
-import PurchaseOrderFilter from '@/components/PurchaseOrderFilter';
+
 import { usePurchaseOrderStore } from '@/store/usePurchaseOrderStore';
 import { useToast } from '@/hooks/use-toast';
 import { formatDate } from '@/utils/formatters';
@@ -54,11 +53,7 @@ export const PurchaseOrders = () => {
   const { 
     purchaseOrders, 
     fetchPurchaseOrders, 
-    getFilteredPurchaseOrders, 
     deletePurchaseOrder,
-    setFilters, 
-    clearFilters, 
-    filters, 
     isLoading
   } = usePurchaseOrderStore();
   
@@ -68,7 +63,7 @@ export const PurchaseOrders = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedPurchaseOrderIds, setSelectedPurchaseOrderIds] = useState<Set<number | string>>(new Set());
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  
 
   // Helper function to get supplier name - must be defined before useMemo
   const getSupplierName = (supplier: any) => {
@@ -81,15 +76,12 @@ export const PurchaseOrders = () => {
     }
   };
 
-  // Fetch data on component mount - only purchase orders, not suppliers
+  // Fetch purchase orders on component mount - following same pattern as other pages
   useEffect(() => {
-    const loadData = async () => {
+    const loadPurchaseOrders = async () => {
       try {
-        console.log('Loading purchase orders data...'); // Debug log
         await fetchPurchaseOrders();
-        console.log('Data loaded successfully'); // Debug log
       } catch (error: any) {
-        console.error('Error loading data:', error); // Debug log
         toast({
           title: "Error",
           description: error.message || "Failed to fetch purchase orders",
@@ -98,46 +90,9 @@ export const PurchaseOrders = () => {
       }
     };
 
-    // Only load data if we don't have any purchase orders
-    if (purchaseOrders.length === 0) {
-      loadData();
-    }
-  }, []); // Remove dependencies to prevent unnecessary re-renders
+    loadPurchaseOrders();
+  }, [fetchPurchaseOrders, toast]);
 
-  // Filter purchase orders based on filters and add searchable text
-  const filteredPurchaseOrders = useMemo(() => {
-    console.log('Computing filtered purchase orders...'); // Debug log
-    
-    // Get filtered orders from store
-    const filtered = getFilteredPurchaseOrders();
-    
-    // Add searchable text for DataTable search
-    const ordersWithSearchText = filtered.map(order => ({
-      ...order,
-      searchableText: [
-        order.purchase_no,
-        order.quotation_ref,
-        getSupplierName(order.suppliers),
-        order.stock_status,
-        order.payment_status,
-        order.purchase_status
-      ].filter(Boolean).join(' ').toLowerCase()
-    }));
-    
-    console.log('Filtered result with search text:', ordersWithSearchText); // Debug log
-    return ordersWithSearchText;
-  }, [getFilteredPurchaseOrders]);
-
-  // Extract unique suppliers from purchase orders for filter dropdown
-  const suppliersFromPurchaseOrders = useMemo(() => {
-    const uniqueSuppliers = new Map();
-    purchaseOrders.forEach(order => {
-      if (order.suppliers) {
-        uniqueSuppliers.set(order.suppliers.id, order.suppliers);
-      }
-    });
-    return Array.from(uniqueSuppliers.values());
-  }, [purchaseOrders]);
 
   const handleEditPurchaseOrder = (purchaseOrder: PurchaseOrder) => {
     console.log('Edit purchase order:', purchaseOrder); // Debug log
@@ -234,19 +189,12 @@ export const PurchaseOrders = () => {
     return `${currencyType} ${numAmount.toFixed(decimalPlaces)}`;
   };
 
-  const handleApplyFilters = (newFilters: any) => {
-    setFilters(newFilters);
-  };
-
-  const handleClearFilters = () => {
-    clearFilters();
-  };
 
 
 
   const handleExportToExcel = async () => {
     try {
-      await exportPurchaseOrdersToExcel(filteredPurchaseOrders);
+      await exportPurchaseOrdersToExcel(purchaseOrders);
       
       toast({
         title: "Success",
@@ -424,8 +372,6 @@ export const PurchaseOrders = () => {
     }
   ];
 
-  console.log('Component render - purchaseOrders:', purchaseOrders); // Debug log
-  console.log('Component render - filteredPurchaseOrders:', filteredPurchaseOrders); // Debug log
 
   return (
     <div className="p-6 space-y-6">
@@ -440,44 +386,6 @@ export const PurchaseOrders = () => {
 
 
 
-      {/* Active Filters Display */}
-      {(filters.supplier || filters.dateRange?.from || filters.dateRange?.to || filters.paymentStatus || filters.purchaseStatus) && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-2 flex-wrap"
-        >
-          <span className="text-sm text-muted-foreground">Active filters:</span>
-          {filters.supplier && (
-            <Badge variant="secondary">
-              Supplier: {filters.supplier}
-            </Badge>
-          )}
-          {(filters.dateRange?.from || filters.dateRange?.to) && (
-            <Badge variant="secondary">
-              Date: {filters.dateRange.from || 'Any'} - {filters.dateRange.to || 'Any'}
-            </Badge>
-          )}
-          {filters.paymentStatus && (
-            <Badge variant="secondary">
-              Payment: {filters.paymentStatus}
-            </Badge>
-          )}
-          {filters.purchaseStatus && (
-            <Badge variant="secondary">
-              Purchase: {filters.purchaseStatus}
-            </Badge>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleClearFilters}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            Clear all
-          </Button>
-        </motion.div>
-      )}
 
       <Card className="border-0 bg-card">
         <CardHeader>
@@ -485,19 +393,10 @@ export const PurchaseOrders = () => {
             <div>
               <CardTitle className="mb-2">Purchase Order Management</CardTitle>
               <CardDescription>
-                {filteredPurchaseOrders.length} purchase orders
-                {(filters.supplier || filters.dateRange?.from || filters.dateRange?.to || filters.paymentStatus || filters.purchaseStatus) ? ' (filtered)' : ''}
+                {purchaseOrders.length} purchase orders
               </CardDescription>
             </div>
             <div className="flex gap-3">
-              <Button 
-                variant="outline"
-                onClick={() => setIsFilterOpen(true)}
-                className="flex items-center gap-2"
-              >
-                <Filter className="h-4 w-4" />
-                Filter
-              </Button>
               <Button 
                 variant="outline"
                 onClick={handleExportToExcel}
@@ -517,10 +416,10 @@ export const PurchaseOrders = () => {
         </CardHeader>
         <CardContent>
           <DataTable
-            data={filteredPurchaseOrders}
+            data={purchaseOrders}
             columns={columns}
-            searchKey="searchableText"
-            searchPlaceholder="Search purchase orders by PO number, supplier name, quotation ref, or status..."
+            searchKey="purchase_no"
+            searchPlaceholder="Search purchase orders..."
             loading={isLoading}
             onRowSelect={setSelectedPurchaseOrderIds}
             emptyMessage="No purchase orders available."
@@ -540,14 +439,6 @@ export const PurchaseOrders = () => {
         onDelete={handleDetailsDelete}
       />
 
-      <PurchaseOrderFilter
-        isOpen={isFilterOpen}
-        onClose={() => setIsFilterOpen(false)}
-        filters={filters}
-        onApplyFilters={handleApplyFilters}
-        onClearFilters={handleClearFilters}
-        suppliers={suppliersFromPurchaseOrders}
-      />
 
       <DeleteConfirmModal
         isOpen={isDeleteModalOpen}
