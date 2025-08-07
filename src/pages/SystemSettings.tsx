@@ -70,11 +70,11 @@ export const SystemSettings = () => {
       </motion.div>
       
       <Tabs defaultValue="company" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="company">Company</TabsTrigger>
-          <TabsTrigger value="appearance">Appearance</TabsTrigger>
-          <TabsTrigger value="localization">Localization</TabsTrigger>
-          <TabsTrigger value="features">Features</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4 h-15">
+          <TabsTrigger value="company" className="flex items-center justify-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=active]:font-medium data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground data-[state=inactive]:hover:bg-accent/50 transition-all duration-300 rounded-lg px-4 py-2 text-sm font-medium h-10">Company</TabsTrigger>
+          <TabsTrigger value="appearance" className="flex items-center justify-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=active]:font-medium data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground data-[state=inactive]:hover:bg-accent/50 transition-all duration-300 rounded-lg px-4 py-2 text-sm font-medium h-10">Appearance</TabsTrigger>
+          <TabsTrigger value="localization" className="flex items-center justify-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=active]:font-medium data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground data-[state=inactive]:hover:bg-accent/50 transition-all duration-300 rounded-lg px-4 py-2 text-sm font-medium h-10">Localization</TabsTrigger>
+          <TabsTrigger value="features" className="flex items-center justify-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=active]:font-medium data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground data-[state=inactive]:hover:bg-accent/50 transition-all duration-300 rounded-lg px-4 py-2 text-sm font-medium h-10">Features</TabsTrigger>
         </TabsList>
 
         <TabsContent value="company">

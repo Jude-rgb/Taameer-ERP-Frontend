@@ -15,6 +15,7 @@ import { Customers } from "./pages/Customers";
 import { Reports } from "./pages/Reports";
 import { UserManagement } from "./pages/UserManagement";
 import { SystemSettings } from "./pages/SystemSettings";
+import { Suppliers } from "./pages/Suppliers";
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 
@@ -41,6 +42,7 @@ const App = () => (
           <Route path="sales/invoices" element={<Invoices />} />
           <Route path="sales/delivery-notes" element={<DeliveryNotes />} />
           <Route path="customers" element={<Customers />} />
+          <Route path="suppliers" element={<Suppliers />} />
           <Route path="reports" element={<Reports />} />
           <Route path="users" element={<UserManagement />} />
           <Route path="settings" element={<SystemSettings />} />
