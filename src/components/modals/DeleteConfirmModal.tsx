@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -15,6 +15,8 @@ interface DeleteConfirmModalProps {
   onConfirm: () => void;
   title: string;
   description: string;
+  isLoading?: boolean;
+  loadingText?: string;
 }
 
 export const DeleteConfirmModal = ({ 
@@ -22,7 +24,9 @@ export const DeleteConfirmModal = ({
   onClose, 
   onConfirm, 
   title, 
-  description 
+  description,
+  isLoading = false,
+  loadingText = "Deleting..."
 }: DeleteConfirmModalProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -48,15 +52,27 @@ export const DeleteConfirmModal = ({
           transition={{ delay: 0.1, duration: 0.3 }}
           className="flex justify-center gap-3 pt-4"
         >
-          <Button variant="outline" onClick={onClose}>
+          <Button 
+            variant="outline" 
+            onClick={onClose}
+            disabled={isLoading}
+          >
             Cancel
           </Button>
           <Button 
             variant="destructive" 
             onClick={onConfirm}
+            disabled={isLoading}
             className="hover:scale-105 transition-all duration-200"
           >
-            Delete
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                {loadingText}
+              </div>
+            ) : (
+              "Delete"
+            )}
           </Button>
         </motion.div>
       </DialogContent>

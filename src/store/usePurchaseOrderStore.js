@@ -4,6 +4,8 @@ import {
   getPurchaseOrderDetails,
   getPurchasePayments,
   deletePurchaseOrder,
+  updateStock,
+  createPayment,
 } from "@/services/purchaseOrder";
 
 /**
@@ -123,6 +125,137 @@ export const usePurchaseOrderStore = create((set, get) => ({
     }
   },
 
+  // Update received quantities for products
+  updateReceivedQty: async (purchaseId, products) => {
+    try {
+      set({ isLoading: true, error: null });
+
+      // Make API calls for each product
+      const updatePromises = products.map((product) =>
+        updateStock({
+          purchase_id: purchaseId,
+          id: product.id,
+          purchase_quantity: product.purchase_quantity,
+          total_quantity_received: product.total_quantity_received,
+          balance_quantity: product.balance_quantity,
+        })
+      );
+
+      await Promise.all(updatePromises);
+
+      // Update the selected purchase order in store with new data
+      const currentSelectedOrder = get().selectedPurchaseOrder;
+      if (currentSelectedOrder && currentSelectedOrder.id === purchaseId) {
+        const updatedOrder = {
+          ...currentSelectedOrder,
+          purchases_product_details: products,
+        };
+        set({ selectedPurchaseOrder: updatedOrder });
+      }
+
+      set({ isLoading: false });
+      return { success: true };
+    } catch (error) {
+      set({
+        error: error.message,
+        isLoading: false,
+      });
+      throw error;
+    }
+  },
+
+  // Mark stock as fully received
+  markStockReceived: async (purchaseId, products) => {
+    try {
+      set({ isLoading: true, error: null });
+
+      // Find products that need to be updated (where received < ordered)
+      const productsToUpdate = products.filter(
+        (product) => product.purchase_quantity > product.total_quantity_received
+      );
+
+      if (productsToUpdate.length === 0) {
+        set({ isLoading: false });
+        return {
+          success: true,
+          message: "All products already fully received",
+        };
+      }
+
+      // Update each product to set received = ordered
+      const updatePromises = productsToUpdate.map((product) =>
+        updateStock({
+          purchase_id: purchaseId,
+          id: product.id,
+          purchase_quantity: product.purchase_quantity,
+          total_quantity_received: product.purchase_quantity,
+          balance_quantity: 0,
+        })
+      );
+
+      await Promise.all(updatePromises);
+
+      // Update the selected purchase order in store with new data
+      const currentSelectedOrder = get().selectedPurchaseOrder;
+      if (currentSelectedOrder && currentSelectedOrder.id === purchaseId) {
+        const updatedOrder = {
+          ...currentSelectedOrder,
+          purchases_product_details:
+            currentSelectedOrder.purchases_product_details.map((product) => {
+              const updatedProduct = productsToUpdate.find(
+                (p) => p.id === product.id
+              );
+              if (updatedProduct) {
+                return {
+                  ...product,
+                  total_quantity_received: product.purchase_quantity,
+                  balance_quantity: 0,
+                };
+              }
+              return product;
+            }),
+        };
+        set({ selectedPurchaseOrder: updatedOrder });
+      }
+
+      set({ isLoading: false });
+      return { success: true };
+    } catch (error) {
+      set({
+        error: error.message,
+        isLoading: false,
+      });
+      throw error;
+    }
+  },
+
+  // Create payment for purchase order
+  createPayment: async (payload) => {
+    try {
+      set({ isLoading: true, error: null });
+
+      const response = await createPayment(payload);
+
+      if (response.success) {
+        // Refresh payment history for the current purchase order
+        const currentSelectedOrder = get().selectedPurchaseOrder;
+        if (currentSelectedOrder) {
+          await get().getPurchasePayments(currentSelectedOrder.id);
+        }
+        
+        set({ isLoading: false });
+        return response;
+      } else {
+        throw new Error(response.message || "Failed to create payment");
+      }
+    } catch (error) {
+      set({
+        error: error.message,
+        isLoading: false,
+      });
+      throw error;
+    }
+  },
 
   // Clear error
   clearError: () => set({ error: null }),
@@ -137,11 +270,9 @@ export const usePurchaseOrderStore = create((set, get) => ({
       error: null,
     }),
 
-
   // Get purchase order by ID
   getPurchaseOrderById: (orderId) => {
     const { purchaseOrders } = get();
     return purchaseOrders.find((order) => order.id === orderId);
   },
-
 }));
