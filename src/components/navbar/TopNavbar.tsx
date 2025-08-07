@@ -41,7 +41,7 @@ export const TopNavbar = () => {
 
             {/* Company Info - hidden on mobile */}
             <div className="hidden lg:block">
-              <h2 className="font-semibold text-foreground">{settings?.companyName || 'Taameer'}</h2>
+              <h2 className="font-semibold text-foreground">{'Taameer'}</h2>
               <p className="text-xs text-muted-foreground">Construction Materials</p>
             </div>
             

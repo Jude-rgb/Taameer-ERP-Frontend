@@ -1,181 +1,561 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye } from 'lucide-react';
+import { 
+  Plus, 
+  Filter, 
+  Edit, 
+  Trash2, 
+  Package, 
+  FileText, 
+  Calendar, 
+  Building2,
+  Download,
+  PackageCheck
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { dummyPurchaseOrders, formatOMRCurrency, PurchaseOrder } from '@/data/dummyData';
-import { format } from 'date-fns';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { DataTable, Column } from '@/components/ui/data-table';
+import { ActionButton } from '@/components/ui/action-button';
+import { DeleteConfirmModal } from '@/components/modals/DeleteConfirmModal';
+import { PurchaseOrderDetailsModal } from '@/components/modals/PurchaseOrderDetailsModal';
+import PurchaseOrderFilter from '@/components/PurchaseOrderFilter';
+import { usePurchaseOrderStore } from '@/store/usePurchaseOrderStore';
+import { useToast } from '@/hooks/use-toast';
+import { formatDate } from '@/utils/formatters';
+import { exportPurchaseOrdersToExcel } from '@/utils/exportToExcel';
+
+interface PurchaseOrder {
+  id: number;
+  purchase_no: string;
+  quotation_ref: string;
+  purchase_date: string;
+  created_at: string;
+  grand_total: string;
+  product_count: number;
+  purchase_status: string;
+  payment_status: string;
+  stock_status: string;
+  currency_type: string;
+  currency_decimal_places: number;
+  suppliers: {
+    id: number;
+    supplier_type: string;
+    business_name?: string;
+    first_name?: string;
+    last_name?: string;
+  };
+  // Add a computed field for search
+  searchableText?: string;
+}
 
 export const PurchaseOrders = () => {
-  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>(dummyPurchaseOrders);
-  const [searchTerm, setSearchTerm] = useState('');
+  const { 
+    purchaseOrders, 
+    fetchPurchaseOrders, 
+    getFilteredPurchaseOrders, 
+    deletePurchaseOrder,
+    setFilters, 
+    clearFilters, 
+    filters, 
+    isLoading
+  } = usePurchaseOrderStore();
+  
+  const { toast } = useToast();
+  
+  const [selectedPurchaseOrder, setSelectedPurchaseOrder] = useState<PurchaseOrder | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedPurchaseOrderIds, setSelectedPurchaseOrderIds] = useState<Set<number | string>>(new Set());
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  const filteredOrders = purchaseOrders.filter(order =>
-    order.poNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.supplier.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const getStatusVariant = (status: string) => {
-    switch (status) {
-      case 'Confirmed':
-        return 'default';
-      case 'Received':
-        return 'default';
-      case 'Draft':
-        return 'secondary';
-      case 'Sent':
-        return 'outline';
-      case 'Cancelled':
-        return 'destructive';
-      default:
-        return 'secondary';
+  // Helper function to get supplier name - must be defined before useMemo
+  const getSupplierName = (supplier: any) => {
+    if (supplier.supplier_type === 'business_type') {
+      return supplier.business_name || 'N/A';
+    } else {
+      const firstName = supplier.first_name || '';
+      const lastName = supplier.last_name || '';
+      return `${firstName} ${lastName}`.trim() || 'N/A';
     }
   };
 
+  // Fetch data on component mount - only purchase orders, not suppliers
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        console.log('Loading purchase orders data...'); // Debug log
+        await fetchPurchaseOrders();
+        console.log('Data loaded successfully'); // Debug log
+      } catch (error: any) {
+        console.error('Error loading data:', error); // Debug log
+        toast({
+          title: "Error",
+          description: error.message || "Failed to fetch purchase orders",
+          variant: "destructive",
+        });
+      }
+    };
+
+    // Only load data if we don't have any purchase orders
+    if (purchaseOrders.length === 0) {
+      loadData();
+    }
+  }, []); // Remove dependencies to prevent unnecessary re-renders
+
+  // Filter purchase orders based on filters and add searchable text
+  const filteredPurchaseOrders = useMemo(() => {
+    console.log('Computing filtered purchase orders...'); // Debug log
+    
+    // Get filtered orders from store
+    const filtered = getFilteredPurchaseOrders();
+    
+    // Add searchable text for DataTable search
+    const ordersWithSearchText = filtered.map(order => ({
+      ...order,
+      searchableText: [
+        order.purchase_no,
+        order.quotation_ref,
+        getSupplierName(order.suppliers),
+        order.stock_status,
+        order.payment_status,
+        order.purchase_status
+      ].filter(Boolean).join(' ').toLowerCase()
+    }));
+    
+    console.log('Filtered result with search text:', ordersWithSearchText); // Debug log
+    return ordersWithSearchText;
+  }, [getFilteredPurchaseOrders]);
+
+  // Extract unique suppliers from purchase orders for filter dropdown
+  const suppliersFromPurchaseOrders = useMemo(() => {
+    const uniqueSuppliers = new Map();
+    purchaseOrders.forEach(order => {
+      if (order.suppliers) {
+        uniqueSuppliers.set(order.suppliers.id, order.suppliers);
+      }
+    });
+    return Array.from(uniqueSuppliers.values());
+  }, [purchaseOrders]);
+
+  const handleEditPurchaseOrder = (purchaseOrder: PurchaseOrder) => {
+    console.log('Edit purchase order:', purchaseOrder); // Debug log
+    toast({
+      title: "Info",
+      description: "Edit purchase order functionality will be available when API is fully implemented.",
+      variant: "info",
+    });
+  };
+
+  const handleDeletePurchaseOrder = (purchaseOrder: PurchaseOrder) => {
+    console.log('Delete purchase order:', purchaseOrder); // Debug log
+    setSelectedPurchaseOrder(purchaseOrder);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleUpdateReceivedQty = (purchaseOrder: PurchaseOrder) => {
+    console.log('Update received quantity:', purchaseOrder); // Debug log
+    toast({
+      title: "Info",
+      description: "Update received quantity functionality will be available when API is fully implemented.",
+      variant: "info",
+    });
+  };
+
+  const handleRowClick = (purchaseOrder: PurchaseOrder) => {
+    console.log('Row clicked:', purchaseOrder); // Debug log
+    setSelectedPurchaseOrder(purchaseOrder);
+    setIsDetailsModalOpen(true);
+  };
+
+  const handleDetailsEdit = (purchaseOrder: PurchaseOrder) => {
+    handleEditPurchaseOrder(purchaseOrder);
+  };
+
+  const handleDetailsDelete = (purchaseOrder: PurchaseOrder) => {
+    handleDeletePurchaseOrder(purchaseOrder);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedPurchaseOrder) return;
+    
+    try {
+      await deletePurchaseOrder(selectedPurchaseOrder.id);
+      toast({
+        title: "Success",
+        description: "Purchase order deleted successfully",
+        variant: "success",
+      });
+      setIsDeleteModalOpen(false);
+      setSelectedPurchaseOrder(null);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete purchase order",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getSupplierInitials = (supplier: any) => {
+    const name = getSupplierName(supplier);
+    if (name === 'N/A') return 'S';
+    return name
+      .split(' ')
+      .map((name: string) => name[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const getStatusBadge = (status: string, type: 'purchase' | 'payment') => {
+    const statusMap = {
+      purchase: {
+        completed: { label: 'Completed', className: 'bg-green-500 text-white' },
+        ordered: { label: 'Ordered', className: 'bg-blue-500 text-white' },
+        partially: { label: 'Partially', className: 'bg-orange-500 text-white' },
+        received: { label: 'Received', className: 'bg-green-500 text-white' },
+        draft: { label: 'Draft', className: 'bg-gray-500 text-white' },
+        cancelled: { label: 'Cancelled', className: 'bg-red-500 text-white' }
+      },
+      payment: {
+        pending: { label: 'Pending', className: 'bg-yellow-500 text-white' },
+        done: { label: 'Paid', className: 'bg-green-500 text-white' }
+      }
+    };
+
+    const statusConfig = statusMap[type][status.toLowerCase()] || { label: status, className: 'bg-gray-500 text-white' };
+    return <Badge className={statusConfig.className}>{statusConfig.label}</Badge>;
+  };
+
+  const formatCurrency = (amount: string, currencyType: string = 'OMR', decimalPlaces: number = 3) => {
+    const numAmount = parseFloat(amount) || 0;
+    return `${currencyType} ${numAmount.toFixed(decimalPlaces)}`;
+  };
+
+  const handleApplyFilters = (newFilters: any) => {
+    setFilters(newFilters);
+  };
+
+  const handleClearFilters = () => {
+    clearFilters();
+  };
+
+
+
+  const handleExportToExcel = async () => {
+    try {
+      await exportPurchaseOrdersToExcel(filteredPurchaseOrders);
+      
+      toast({
+        title: "Success",
+        description: "Purchase orders exported to Excel successfully",
+        variant: "success",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to export purchase orders",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleGeneratePDF = (purchaseOrder: PurchaseOrder) => {
+    console.log('Generate PDF for:', purchaseOrder); // Debug log
+    toast({
+      title: "Info",
+      description: "PDF generation functionality will be available when API is fully implemented.",
+      variant: "info",
+    });
+  };
+
+  // Table columns definition
+  const columns: Column<PurchaseOrder>[] = [
+    {
+      key: 'purchase_no',
+      header: 'Purchase No',
+      render: (order) => (
+        <div className="font-medium text-foreground">
+          {order.purchase_no}
+        </div>
+      )
+    },
+    {
+      key: 'quotation_ref',
+      header: 'Quotation Ref',
+      render: (order) => (
+        <div className="text-sm text-muted-foreground">
+          {order.quotation_ref || 'N/A'}
+        </div>
+      )
+    },
+    {
+      key: 'supplier',
+      header: 'Supplier Name',
+      render: (order) => (
+        <div className="flex items-center gap-3">
+          <Avatar className="w-8 h-8">
+            <AvatarFallback className="bg-gradient-primary text-white text-xs font-medium">
+              {getSupplierInitials(order.suppliers)}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <div className="font-medium text-foreground">{getSupplierName(order.suppliers)}</div>
+            <div className="text-xs text-muted-foreground">
+              {order.suppliers.supplier_type === 'business_type' ? 'Business' : 'Individual'}
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      key: 'purchase_date',
+      header: 'Purchase Date',
+      render: (order) => (
+        <div className="text-sm text-muted-foreground flex items-center gap-1">
+          <Calendar className="w-3 h-3" />
+          {formatDate(order.purchase_date)}
+        </div>
+      )
+    },
+    {
+      key: 'created_at',
+      header: 'Created At',
+      render: (order) => (
+        <div className="text-sm text-muted-foreground flex items-center gap-1">
+          <Calendar className="w-3 h-3" />
+          {formatDate(order.created_at)}
+        </div>
+      )
+    },
+    {
+      key: 'product_count',
+      header: 'Product Count',
+      render: (order) => (
+        <div className="text-sm font-medium">
+          {order.product_count}
+        </div>
+      )
+    },
+    {
+      key: 'grand_total',
+      header: 'Grand Total',
+      render: (order) => (
+        <div className="font-semibold text-green-600">
+          {formatCurrency(order.grand_total, order.currency_type, order.currency_decimal_places)}
+        </div>
+      )
+    },
+    {
+      key: 'stock_status',
+      header: 'Stock Status',
+      render: (order) => getStatusBadge(order.stock_status, 'purchase')
+    },
+    {
+      key: 'payment_status',
+      header: 'Payment Status',
+      render: (order) => getStatusBadge(order.payment_status, 'payment')
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      width: 'text-right',
+      render: (order) => {
+        console.log('Rendering actions for order:', order); // Debug log
+        console.log('Order status:', { 
+          stock_status: order.stock_status, 
+          payment_status: order.payment_status 
+        }); // Debug log
+        
+        // Action button visibility logic based on stock_status
+        const canEdit = order.stock_status !== 'completed' && order.stock_status !== 'partially';
+        const canDelete = order.stock_status !== 'completed' && order.stock_status !== 'partially';
+        const canUpdateReceivedQty = order.stock_status !== 'completed';
+
+        return (
+          <div className="flex items-center justify-end gap-2">
+            {canEdit && (
+              <ActionButton
+                icon={Edit}
+                tooltip="Edit Purchase Order"
+                color="blue"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEditPurchaseOrder(order);
+                }}
+              />
+            )}
+            {canDelete && (
+              <ActionButton
+                icon={Trash2}
+                tooltip="Delete Purchase Order"
+                color="red"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeletePurchaseOrder(order);
+                }}
+              />
+            )}
+            <ActionButton
+              icon={Download}
+              tooltip="Generate PDF"
+              color="green"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleGeneratePDF(order);
+              }}
+            />
+            {canUpdateReceivedQty && (
+              <ActionButton
+                icon={PackageCheck}
+                tooltip="Update Received Quantity"
+                color="yellow"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleUpdateReceivedQty(order);
+                }}
+              />
+            )}
+          </div>
+        );
+      }
+    }
+  ];
+
+  console.log('Component render - purchaseOrders:', purchaseOrders); // Debug log
+  console.log('Component render - filteredPurchaseOrders:', filteredPurchaseOrders); // Debug log
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="p-6 space-y-6">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="flex flex-col md:flex-row md:items-center justify-between gap-4"
       >
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Purchase Orders</h1>
-          <p className="text-muted-foreground">
-            Manage your purchase orders and supplier relationships
-          </p>
-        </div>
-        <Button className="bg-gradient-primary hover:scale-105 transition-all duration-200">
-          <Plus className="mr-2 h-4 w-4" />
-          Create Purchase Order
-        </Button>
+        <h1 className="text-3xl font-bold tracking-tight mb-2">Purchase Orders</h1>
+        <p className="text-muted-foreground">Manage purchase orders and supplier relationships</p>
       </motion.div>
 
-      {/* Filters */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1, duration: 0.5 }}
-        className="flex flex-col sm:flex-row gap-4"
-      >
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <Input
-            placeholder="Search by PO number or supplier..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <Button variant="outline">
-          <Filter className="mr-2 h-4 w-4" />
-          Filter
-        </Button>
-      </motion.div>
 
-      {/* Purchase Orders Table */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.5 }}
-      >
-        <Card className="border-0 bg-gradient-card">
-          <CardHeader>
-            <CardTitle>Purchase Orders</CardTitle>
-            <CardDescription>
-              {filteredOrders.length} purchase orders
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>PO Number</TableHead>
-                    <TableHead>Supplier</TableHead>
-                    <TableHead>Order Date</TableHead>
-                    <TableHead>Expected Date</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredOrders.map((order, index) => (
-                    <motion.tr
-                      key={order.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="hover:bg-muted/50 transition-colors"
-                    >
-                      <TableCell className="font-medium">
-                        {order.poNumber}
-                      </TableCell>
-                      <TableCell>{order.supplier}</TableCell>
-                      <TableCell>
-                        {format(order.orderDate, 'MMM dd, yyyy')}
-                      </TableCell>
-                      <TableCell>
-                        {format(order.expectedDate, 'MMM dd, yyyy')}
-                      </TableCell>
-                      <TableCell className="font-semibold">
-                        {formatOMRCurrency(order.amount)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={getStatusVariant(order.status)}>
-                          {order.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                              <Eye className="mr-2 h-4 w-4" />
-                              View
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive">
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </motion.tr>
-                  ))}
-                </TableBody>
-              </Table>
+
+      {/* Active Filters Display */}
+      {(filters.supplier || filters.dateRange?.from || filters.dateRange?.to || filters.paymentStatus || filters.purchaseStatus) && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-2 flex-wrap"
+        >
+          <span className="text-sm text-muted-foreground">Active filters:</span>
+          {filters.supplier && (
+            <Badge variant="secondary">
+              Supplier: {filters.supplier}
+            </Badge>
+          )}
+          {(filters.dateRange?.from || filters.dateRange?.to) && (
+            <Badge variant="secondary">
+              Date: {filters.dateRange.from || 'Any'} - {filters.dateRange.to || 'Any'}
+            </Badge>
+          )}
+          {filters.paymentStatus && (
+            <Badge variant="secondary">
+              Payment: {filters.paymentStatus}
+            </Badge>
+          )}
+          {filters.purchaseStatus && (
+            <Badge variant="secondary">
+              Purchase: {filters.purchaseStatus}
+            </Badge>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleClearFilters}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            Clear all
+          </Button>
+        </motion.div>
+      )}
+
+      <Card className="border-0 bg-card">
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <CardTitle className="mb-2">Purchase Order Management</CardTitle>
+              <CardDescription>
+                {filteredPurchaseOrders.length} purchase orders
+                {(filters.supplier || filters.dateRange?.from || filters.dateRange?.to || filters.paymentStatus || filters.purchaseStatus) ? ' (filtered)' : ''}
+              </CardDescription>
             </div>
-          </CardContent>
-        </Card>
-      </motion.div>
+            <div className="flex gap-3">
+              <Button 
+                variant="outline"
+                onClick={() => setIsFilterOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <Filter className="h-4 w-4" />
+                Filter
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={handleExportToExcel}
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Export to Excel
+              </Button>
+              <Button 
+                className="hover:scale-105 transition-all duration-200 bg-primary hover:bg-primary-hover"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create Purchase Order
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <DataTable
+            data={filteredPurchaseOrders}
+            columns={columns}
+            searchKey="searchableText"
+            searchPlaceholder="Search purchase orders by PO number, supplier name, quotation ref, or status..."
+            loading={isLoading}
+            onRowSelect={setSelectedPurchaseOrderIds}
+            emptyMessage="No purchase orders available."
+            idKey="id"
+            onRowClick={(order) => handleRowClick(order)}
+            pageSizeOptions={[10, 20, 50, 100]}
+            defaultPageSize={10}
+          />
+        </CardContent>
+      </Card>
+
+      <PurchaseOrderDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+        purchaseOrder={selectedPurchaseOrder}
+        onEdit={handleDetailsEdit}
+        onDelete={handleDetailsDelete}
+      />
+
+      <PurchaseOrderFilter
+        isOpen={isFilterOpen}
+        onClose={() => setIsFilterOpen(false)}
+        filters={filters}
+        onApplyFilters={handleApplyFilters}
+        onClearFilters={handleClearFilters}
+        suppliers={suppliersFromPurchaseOrders}
+      />
+
+      <DeleteConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Delete Purchase Order"
+        description={`Are you sure you want to delete purchase order ${selectedPurchaseOrder?.purchase_no}? This action cannot be undone.`}
+      />
     </div>
   );
 };

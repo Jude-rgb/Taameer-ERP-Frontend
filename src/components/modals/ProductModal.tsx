@@ -58,14 +58,52 @@ interface ProductModalProps {
 }
 
 const PRODUCT_UNITS = [
-  'kg',
-  'ton',
-  'liter',
-  'meter',
-  'piece',
-  'box',
-  'bag'
+  'kg',         // kilogram
+  'g',          // gram
+  'mg',         // milligram
+  'ton',        // metric ton
+  'lb',         // pound
+  'oz',         // ounce
+
+  'l',          // liter
+  'ml',         // milliliter
+  'gal',        // gallon
+
+  'm',          // meter
+  'cm',         // centimeter
+  'mm',         // millimeter
+  'ft',         // feet
+  'inch',       // inch
+
+  'm²',         // square meter
+  'ft²',        // square feet
+  'cm²',        // square cm
+
+  'm³',         // cubic meter
+  'ft³',        // cubic feet
+  'L/m²',       // liters per square meter
+
+  'sheet',      // sheets
+  'roll',       // rolls
+  'bag',        // bags
+  'box',        // boxes
+  'pack',       // packs
+  'bottle',     // bottles
+  'can',        // cans
+  'tube',       // tubes
+  'piece',      // individual item
+  'set',        // sets
+  'bundle',     // bundles
+  'pallet',     // pallets
+  'container',  // containers
+  'carton',     // cartons
+  'drum',       // drums
+  'barrel',     // barrels
+
+  'g/m²',       // grams per square meter
+  'pcs',        // shorthand for pieces
 ];
+
 
 const VARIATION_TYPES = [
   'color',
@@ -390,6 +428,9 @@ export const ProductModal = ({ isOpen, onClose, product }: ProductModalProps) =>
                 rows={3}
               />
             </div>
+            <p className="text-sm text-muted-foreground bg-gray-200 dark:bg-gray-800 p-3 rounded-md">
+              <strong>Coming Soon:</strong> Product image adding option will be added in a future update.
+            </p>
 
             <div className="space-y-2">
               <Label htmlFor="product_image">Product Image</Label>
@@ -438,6 +479,9 @@ export const ProductModal = ({ isOpen, onClose, product }: ProductModalProps) =>
               <Calendar className="h-5 w-5 text-blue-500" />
               Additional Information
             </h3>
+            <p className="text-sm text-muted-foreground bg-gray-200 dark:bg-gray-800 p-3 rounded-md">
+              <strong>Coming Soon:</strong> Availability toggle will be added in a future update.
+            </p>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
@@ -478,6 +522,7 @@ export const ProductModal = ({ isOpen, onClose, product }: ProductModalProps) =>
                   <p className="text-sm text-red-500">{errors.product_unit}</p>
                 )}
               </div>
+              
 
               <div className="space-y-2">
                 <Label>Availability</Label>
@@ -555,65 +600,13 @@ export const ProductModal = ({ isOpen, onClose, product }: ProductModalProps) =>
             </div>
           </div>
 
-          {/* Stock Information (UI only) */}
-          <div className="space-y-6">
-            <h3 className="text-xl font-semibold flex items-center gap-2 text-gray-800 dark:text-gray-200 border-b pb-2">
-              <Package className="h-5 w-5 text-yellow-600" />
-              Stock Information
-            </h3>
-            <p className="text-sm text-muted-foreground bg-gray-100 dark:bg-gray-800 p-3 rounded-md">
-              <strong>Note:</strong> Stock information will be managed separately through the inventory management system.
-            </p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 opacity-50">
-              <div className="space-y-2">
-                <Label htmlFor="total_stock">Total Stock</Label>
-                <Input
-                  id="total_stock"
-                  type="number"
-                  value={formData.total_stock || 0}
-                  onChange={(e) => handleChange('total_stock', Number(e.target.value))}
-                  placeholder="0"
-                  min="0"
-                  disabled
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="warehouse_stock">Warehouse Stock</Label>
-                <Input
-                  id="warehouse_stock"
-                  type="number"
-                  value={formData.warehouse_stock || 0}
-                  onChange={(e) => handleChange('warehouse_stock', Number(e.target.value))}
-                  placeholder="0"
-                  min="0"
-                  disabled
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="sold_stock">Sold Stock</Label>
-                <Input
-                  id="sold_stock"
-                  type="number"
-                  value={formData.sold_stock || 0}
-                  onChange={(e) => handleChange('sold_stock', Number(e.target.value))}
-                  placeholder="0"
-                  min="0"
-                  disabled
-                />
-              </div>
-            </div>
-          </div>
-
           {/* Product Variations (UI only) */}
           <div className="space-y-6">
             <h3 className="text-xl font-semibold flex items-center gap-2 text-gray-800 dark:text-gray-200 border-b pb-2">
               <Plus className="h-5 w-5 text-purple-500" />
               Product Variations
             </h3>
-            <p className="text-sm text-muted-foreground bg-gray-100 dark:bg-gray-800 p-3 rounded-md">
+            <p className="text-sm text-muted-foreground bg-gray-200 dark:bg-gray-800 p-3 rounded-md">
               <strong>Coming Soon:</strong> Variation management will be available in future updates for color, size, material, and other product attributes.
             </p>
             

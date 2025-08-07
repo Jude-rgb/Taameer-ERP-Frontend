@@ -39,9 +39,15 @@ const menuItems = [{
     url: '/sales/delivery-notes'
   }]
 }, {
-  title: 'Customers',
-  url: '/customers',
-  icon: Users
+  title: 'Customers & Suppliers',
+  icon: Users,
+  items: [{
+    title: 'Customers',
+    url: '/customers'
+  }, {
+    title: 'Suppliers',
+    url: '/suppliers'
+  }]
 }, {
   title: 'Reports',
   url: '/reports',
@@ -104,24 +110,12 @@ export function AppSidebar() {
         <SidebarHeader className="p-4 border-b border-border/50">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 flex items-center justify-center">
-                {open ? (
-                  <img src="/saas-uploads/Logo-01.png" alt="Logo" className="w-auto h-8 object-contain" />
-                ) : (
-                  <Building2 className="w-6 h-6 text-primary" />
+              <div className="w-15 h-10 flex items-center justify-center">
+                {open && (
+                  <img src="/saas-uploads/Logo-01.png" alt="Logo" className="w-auto h-10 object-contain" />
                 )}
               </div>
-              {open && (
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="flex flex-col"
-                >
-                  <span className="text-sm font-semibold text-foreground">{settings?.companyName || 'SaaS Platform'}</span>
-                  <span className="text-xs text-muted-foreground">Invoice System</span>
-                </motion.div>
-              )}
+           
             </div>
             <SidebarTrigger className="w-8 h-8 hover:bg-accent/50" />
           </div>

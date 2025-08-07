@@ -202,8 +202,8 @@ export const UserModal = ({ isOpen, onClose, user, mode }: UserModalProps) => {
         <form onSubmit={handleSubmit}>
           <Tabs defaultValue="basic" className="w-full">
             <TabsList className="grid w-full grid-cols-2 bg-muted/50 p-1 rounded-xl border border-border/50 h-15">
-              <TabsTrigger value="basic" className="flex items-center justify-center gap-2 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=active]:font-medium data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground transition-all duration-300 rounded-lg px-4 py-2 text-sm font-medium h-10">Basic Info</TabsTrigger>
-              <TabsTrigger value="permissions"  className="flex items-center justify-center gap-2 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=active]:font-medium data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground transition-all duration-300 rounded-lg px-4 py-2 text-sm font-medium h-10">Permissions</TabsTrigger>
+              <TabsTrigger value="basic" className="flex items-center justify-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=active]:font-medium data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground data-[state=inactive]:hover:bg-accent/50 transition-all duration-300 rounded-lg px-4 py-2 text-sm font-medium h-10">Basic Info</TabsTrigger>
+              <TabsTrigger value="permissions"  className="flex items-center justify-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=active]:font-medium data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground data-[state=inactive]:hover:bg-accent/50 transition-all duration-300 rounded-lg px-4 py-2 text-sm font-medium h-10">Permissions</TabsTrigger>
             </TabsList>
 
             <TabsContent value="basic" className="space-y-4 mt-4">
