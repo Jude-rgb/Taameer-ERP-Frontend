@@ -59,7 +59,8 @@ export const PurchaseOrders = () => {
     setFilters, 
     clearFilters, 
     filters, 
-    isLoading
+    isLoading,
+    getUniqueSuppliers
   } = usePurchaseOrderStore();
   
   const { toast } = useToast();
@@ -81,15 +82,12 @@ export const PurchaseOrders = () => {
     }
   };
 
-  // Fetch data on component mount - only purchase orders, not suppliers
+  // Fetch purchase orders on component mount - following same pattern as other pages
   useEffect(() => {
-    const loadData = async () => {
+    const loadPurchaseOrders = async () => {
       try {
-        console.log('Loading purchase orders data...'); // Debug log
         await fetchPurchaseOrders();
-        console.log('Data loaded successfully'); // Debug log
       } catch (error: any) {
-        console.error('Error loading data:', error); // Debug log
         toast({
           title: "Error",
           description: error.message || "Failed to fetch purchase orders",
@@ -98,46 +96,13 @@ export const PurchaseOrders = () => {
       }
     };
 
-    // Only load data if we don't have any purchase orders
-    if (purchaseOrders.length === 0) {
-      loadData();
-    }
-  }, []); // Remove dependencies to prevent unnecessary re-renders
+    loadPurchaseOrders();
+  }, [fetchPurchaseOrders, toast]);
 
-  // Filter purchase orders based on filters and add searchable text
+  // Filter purchase orders based on filters - following same pattern as other pages
   const filteredPurchaseOrders = useMemo(() => {
-    console.log('Computing filtered purchase orders...'); // Debug log
-    
-    // Get filtered orders from store
-    const filtered = getFilteredPurchaseOrders();
-    
-    // Add searchable text for DataTable search
-    const ordersWithSearchText = filtered.map(order => ({
-      ...order,
-      searchableText: [
-        order.purchase_no,
-        order.quotation_ref,
-        getSupplierName(order.suppliers),
-        order.stock_status,
-        order.payment_status,
-        order.purchase_status
-      ].filter(Boolean).join(' ').toLowerCase()
-    }));
-    
-    console.log('Filtered result with search text:', ordersWithSearchText); // Debug log
-    return ordersWithSearchText;
+    return getFilteredPurchaseOrders();
   }, [getFilteredPurchaseOrders]);
-
-  // Extract unique suppliers from purchase orders for filter dropdown
-  const suppliersFromPurchaseOrders = useMemo(() => {
-    const uniqueSuppliers = new Map();
-    purchaseOrders.forEach(order => {
-      if (order.suppliers) {
-        uniqueSuppliers.set(order.suppliers.id, order.suppliers);
-      }
-    });
-    return Array.from(uniqueSuppliers.values());
-  }, [purchaseOrders]);
 
   const handleEditPurchaseOrder = (purchaseOrder: PurchaseOrder) => {
     console.log('Edit purchase order:', purchaseOrder); // Debug log
@@ -424,8 +389,6 @@ export const PurchaseOrders = () => {
     }
   ];
 
-  console.log('Component render - purchaseOrders:', purchaseOrders); // Debug log
-  console.log('Component render - filteredPurchaseOrders:', filteredPurchaseOrders); // Debug log
 
   return (
     <div className="p-6 space-y-6">
@@ -519,8 +482,8 @@ export const PurchaseOrders = () => {
           <DataTable
             data={filteredPurchaseOrders}
             columns={columns}
-            searchKey="searchableText"
-            searchPlaceholder="Search purchase orders by PO number, supplier name, quotation ref, or status..."
+            searchKey="purchase_no"
+            searchPlaceholder="Search purchase orders..."
             loading={isLoading}
             onRowSelect={setSelectedPurchaseOrderIds}
             emptyMessage="No purchase orders available."
@@ -546,7 +509,7 @@ export const PurchaseOrders = () => {
         filters={filters}
         onApplyFilters={handleApplyFilters}
         onClearFilters={handleClearFilters}
-        suppliers={suppliersFromPurchaseOrders}
+        suppliers={getUniqueSuppliers()}
       />
 
       <DeleteConfirmModal
