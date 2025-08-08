@@ -10,7 +10,8 @@ import { ActionButton } from '@/components/ui/action-button';
 import { AddPaymentModal } from '@/components/modals/AddPaymentModal';
 import { usePurchaseOrderStore } from '@/store/usePurchaseOrderStore';
 import { useToast } from '@/hooks/use-toast';
-import { formatDate } from '@/utils/formatters';
+import { formatDate } from "@/utils/formatters";
+import { generatePurchaseOrderPDF } from "@/utils/generatePurchaseOrderPdf";
 
 interface PurchaseOrder {
   id: number;
@@ -289,12 +290,26 @@ export const PurchaseOrderDetailsModal = ({
   };
 
 
-  const handleGeneratePDF = () => {
-    toast({
-      title: "Info",
-      description: "PDF generation functionality will be available when API is fully implemented.",
-      variant: "info"
-    });
+  const handleGeneratePDF = async () => {
+    try {
+      const resp = await getPurchaseOrderDetails(purchaseOrder.id);
+      if (!resp?.success || !resp.data) {
+        throw new Error(resp?.message || 'Failed to load purchase order details');
+      }
+      const withVAT = window.confirm('Generate PDF with VAT? Click Cancel for without VAT.');
+      await generatePurchaseOrderPDF(resp.data, { withVAT });
+      toast({
+        title: 'Success',
+        description: 'Purchase Order PDF generated.',
+        variant: 'success',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to generate PDF',
+        variant: 'destructive',
+      });
+    }
   };
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

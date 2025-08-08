@@ -277,13 +277,26 @@ export const PurchaseOrders = () => {
     }
   };
 
-  const handleGeneratePDF = (purchaseOrder: PurchaseOrder) => {
-    console.log('Generate PDF for:', purchaseOrder); // Debug log
-    toast({
-      title: "Info",
-      description: "PDF generation functionality will be available when API is fully implemented.",
-      variant: "info",
-    });
+  const handleGeneratePDF = async (purchaseOrder: PurchaseOrder) => {
+    try {
+      const resp = await getPurchaseOrderDetails(purchaseOrder.id);
+      if (!resp?.success || !resp.data) {
+        throw new Error(resp?.message || 'Failed to load purchase order details');
+      }
+      const withVAT = window.confirm('Generate PDF with VAT? Click Cancel for without VAT.');
+      await generatePurchaseOrderPDF(resp.data, { withVAT });
+      toast({
+        title: 'Success',
+        description: 'Purchase Order PDF generated.',
+        variant: 'success',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to generate PDF',
+        variant: 'destructive',
+      });
+    }
   };
 
   // Table columns definition
