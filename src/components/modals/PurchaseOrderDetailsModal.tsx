@@ -8,9 +8,11 @@ import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ActionButton } from '@/components/ui/action-button';
 import { AddPaymentModal } from '@/components/modals/AddPaymentModal';
+import { VATSelectionModal } from '@/components/modals/VATSelectionModal';
 import { usePurchaseOrderStore } from '@/store/usePurchaseOrderStore';
 import { useToast } from '@/hooks/use-toast';
-import { formatDate } from '@/utils/formatters';
+import { formatDate } from "@/utils/formatters";
+import { generatePurchaseOrderPDF } from "@/utils/generatePurchaseOrderPdf";
 
 interface PurchaseOrder {
   id: number;
@@ -89,6 +91,7 @@ export const PurchaseOrderDetailsModal = ({
   const [modalError, setModalError] = useState<string | null>(null);
   const [isMarkingStock, setIsMarkingStock] = useState(false);
   const [isAddPaymentModalOpen, setIsAddPaymentModalOpen] = useState(false);
+  const [isVATModalOpen, setIsVATModalOpen] = useState(false);
   useEffect(() => {
     if (isOpen && purchaseOrder) {
       setModalError(null);
@@ -290,11 +293,29 @@ export const PurchaseOrderDetailsModal = ({
 
 
   const handleGeneratePDF = () => {
-    toast({
-      title: "Info",
-      description: "PDF generation functionality will be available when API is fully implemented.",
-      variant: "info"
-    });
+    setIsVATModalOpen(true);
+  };
+
+  const handleVATSelection = async (withVAT: boolean) => {
+    setIsVATModalOpen(false);
+    try {
+      const resp = await getPurchaseOrderDetails(purchaseOrder.id);
+      if (!resp?.success || !resp.data) {
+        throw new Error(resp?.message || 'Failed to load purchase order details');
+      }
+      await generatePurchaseOrderPDF(resp.data, { withVAT });
+      toast({
+        title: 'Success',
+        description: 'Purchase Order PDF generated successfully.',
+        variant: 'success',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to generate PDF',
+        variant: 'destructive',
+      });
+    }
   };
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -572,6 +593,14 @@ export const PurchaseOrderDetailsModal = ({
         onClose={() => setIsAddPaymentModalOpen(false)}
         purchaseOrder={purchaseOrder}
         onSuccess={handlePaymentSuccess}
+      />
+
+      {/* VAT Selection Modal */}
+      <VATSelectionModal
+        isOpen={isVATModalOpen}
+        onClose={() => setIsVATModalOpen(false)}
+        onConfirm={handleVATSelection}
+        purchaseOrderNo={purchaseOrder.purchase_no}
       />
 
     </Dialog>
