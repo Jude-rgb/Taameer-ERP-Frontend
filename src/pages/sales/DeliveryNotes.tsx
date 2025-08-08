@@ -1,35 +1,20 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye, Truck } from 'lucide-react';
+import { Plus, Filter, Edit, Trash2, Eye, Truck, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import { DataTable, Column } from '@/components/ui/data-table';
+import { ActionButton } from '@/components/ui/action-button';
 import { dummyDeliveryNotes, DeliveryNote } from '@/data/dummyData';
 import { format } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
+import { exportToExcel } from '@/utils/exportToExcel';
 
 export const DeliveryNotes = () => {
-  const [deliveryNotes, setDeliveryNotes] = useState<DeliveryNote[]>(dummyDeliveryNotes);
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const filteredDeliveryNotes = deliveryNotes.filter(note =>
-    note.deliveryNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    note.customerName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const [deliveryNotes] = useState<DeliveryNote[]>(dummyDeliveryNotes);
+  const [selectedIds, setSelectedIds] = useState<Set<string | number>>(new Set());
+  const { toast } = useToast();
 
   const getStatusVariant = (status: string) => {
     switch (status) {
@@ -61,8 +46,46 @@ export const DeliveryNotes = () => {
     }
   };
 
+  const handleExport = async () => {
+    try {
+      const exportRows = deliveryNotes.map(dn => ({
+        'Delivery No': dn.deliveryNumber,
+        'Customer': dn.customerName,
+        'Created Date': format(dn.createdAt, 'yyyy-MM-dd'),
+        'Delivery Date': format(dn.deliveryDate, 'yyyy-MM-dd'),
+        'Total Items': dn.totalItems,
+        'Status': dn.status,
+      }));
+      await exportToExcel(exportRows, null, 'Delivery Notes');
+      toast({ title: 'Success', description: 'Delivery notes exported to Excel', variant: 'success' });
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message || 'Failed to export', variant: 'destructive' });
+    }
+  };
+
+  const columns: Column<DeliveryNote>[] = [
+    { key: 'deliveryNumber', header: 'Delivery Number', render: (n) => <span className="font-medium">{n.deliveryNumber}</span> },
+    { key: 'customerName', header: 'Customer' },
+    { key: 'createdAt', header: 'Created Date', render: (n) => format(n.createdAt, 'MMM dd, yyyy') },
+    { key: 'deliveryDate', header: 'Delivery Date', render: (n) => format(n.deliveryDate, 'MMM dd, yyyy') },
+    { key: 'totalItems', header: 'Total Items' },
+    { key: 'status', header: 'Status', render: (n) => <Badge variant={getStatusVariant(n.status)} className={`${getStatusColor(n.status)} text-white`}>{n.status}</Badge> },
+    {
+      key: 'actions',
+      header: 'Actions',
+      width: 'text-right',
+      render: (n) => (
+        <div className="flex items-center justify-end gap-2">
+          <ActionButton icon={Eye} tooltip="View" color="blue" onClick={(e) => e?.stopPropagation()} />
+          <ActionButton icon={Edit} tooltip="Edit" color="green" onClick={(e) => e?.stopPropagation()} />
+          <ActionButton icon={Trash2} tooltip="Delete" color="red" onClick={(e) => e?.stopPropagation()} />
+        </div>
+      ),
+    },
+  ];
+
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -72,14 +95,8 @@ export const DeliveryNotes = () => {
       >
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Delivery Notes</h1>
-          <p className="text-muted-foreground">
-            Track and manage product deliveries
-          </p>
+          <p className="text-muted-foreground">Track and manage product deliveries</p>
         </div>
-        <Button className="bg-gradient-primary hover:scale-105 transition-all duration-200">
-          <Plus className="mr-2 h-4 w-4" />
-          Create Delivery Note
-        </Button>
       </motion.div>
 
       {/* Summary Cards */}
@@ -137,114 +154,44 @@ export const DeliveryNotes = () => {
         ))}
       </motion.div>
 
-      {/* Filters */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.5 }}
-        className="flex flex-col sm:flex-row gap-4"
-      >
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <Input
-            placeholder="Search by delivery number or customer..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <Button variant="outline">
-          <Filter className="mr-2 h-4 w-4" />
-          Filter
-        </Button>
-      </motion.div>
-
-      {/* Delivery Notes Table */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3, duration: 0.5 }}
-      >
-        <Card className="border-0 bg-gradient-card">
-          <CardHeader>
-            <CardTitle>Delivery Notes</CardTitle>
-            <CardDescription>
-              {filteredDeliveryNotes.length} delivery notes
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Delivery Number</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Created Date</TableHead>
-                    <TableHead>Delivery Date</TableHead>
-                    <TableHead>Total Items</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredDeliveryNotes.map((note, index) => (
-                    <motion.tr
-                      key={note.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="hover:bg-muted/50 transition-colors"
-                    >
-                      <TableCell className="font-medium">
-                        {note.deliveryNumber}
-                      </TableCell>
-                      <TableCell>{note.customerName}</TableCell>
-                      <TableCell>
-                        {format(note.createdAt, 'MMM dd, yyyy')}
-                      </TableCell>
-                      <TableCell>
-                        {format(note.deliveryDate, 'MMM dd, yyyy')}
-                      </TableCell>
-                      <TableCell>{note.totalItems} items</TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={getStatusVariant(note.status)}
-                          className={`${getStatusColor(note.status)} text-white`}
-                        >
-                          {note.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                              <Eye className="mr-2 h-4 w-4" />
-                              View
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive">
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </motion.tr>
-                  ))}
-                </TableBody>
-              </Table>
+      {/* Table Card with unified header actions */}
+      <Card className="border-0 bg-card">
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <CardTitle className="mb-2">Delivery Notes</CardTitle>
+              <CardDescription>{deliveryNotes.length} delivery notes</CardDescription>
             </div>
-          </CardContent>
-        </Card>
-      </motion.div>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => toast({ title: 'Filters', description: 'Filter options coming soon', variant: 'info' })} className="flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                Filter
+              </Button>
+              <Button variant="outline" onClick={handleExport} className="flex items-center gap-2">
+                <Download className="h-4 w-4" />
+                Export to Excel
+              </Button>
+              <Button className="bg-primary hover:bg-primary-hover hover:scale-105 transition-all duration-200" onClick={() => toast({ title: 'Create Delivery Note', description: 'Creation flow coming soon', variant: 'info' })}>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Delivery Note
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <DataTable
+            data={deliveryNotes}
+            columns={columns}
+            searchKey="deliveryNumber"
+            searchPlaceholder="Search delivery notes by number or customer..."
+            onRowSelect={setSelectedIds}
+            emptyMessage="No delivery notes available."
+            idKey="id"
+            pageSizeOptions={[10, 20, 50, 100]}
+            defaultPageSize={10}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 };
