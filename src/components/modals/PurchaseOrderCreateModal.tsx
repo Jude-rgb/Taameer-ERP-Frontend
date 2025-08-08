@@ -499,7 +499,7 @@ export const PurchaseOrderCreateModal = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto">
         <DialogHeader className="border-b pb-4">
           <DialogTitle className="flex items-center gap-2 text-2xl">
