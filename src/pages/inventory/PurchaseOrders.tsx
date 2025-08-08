@@ -28,6 +28,7 @@ import { usePurchaseOrderStore } from '@/store/usePurchaseOrderStore';
 import { useToast } from '@/hooks/use-toast';
 import { formatDate } from '@/utils/formatters';
 import { exportPurchaseOrdersToExcel } from '@/utils/exportToExcel';
+import { generatePurchaseOrderPDF } from '@/utils/generatePurchaseOrderPdf';
 
 interface PurchaseOrder {
   id: number;
