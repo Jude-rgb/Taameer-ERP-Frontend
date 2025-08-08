@@ -29,6 +29,7 @@ import { useToast } from '@/hooks/use-toast';
 import { formatDate } from '@/utils/formatters';
 import { exportPurchaseOrdersToExcel } from '@/utils/exportToExcel';
 import { generatePurchaseOrderPDF } from '@/utils/generatePurchaseOrderPdf';
+import { VATSelectionModal } from '@/components/modals/VATSelectionModal';
 
 interface PurchaseOrder {
   id: number;
@@ -75,6 +76,8 @@ export const PurchaseOrders = () => {
   const [selectedPurchaseOrderIds, setSelectedPurchaseOrderIds] = useState<Set<number | string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
   const [deletingPurchaseOrderId, setDeletingPurchaseOrderId] = useState<number | null>(null);
+  const [isVATModalOpen, setIsVATModalOpen] = useState(false);
+  const [selectedOrderForPDF, setSelectedOrderForPDF] = useState<PurchaseOrder | null>(null);
   
 
   // Helper function to get supplier name - must be defined before useMemo
@@ -277,17 +280,24 @@ export const PurchaseOrders = () => {
     }
   };
 
-  const handleGeneratePDF = async (purchaseOrder: PurchaseOrder) => {
+  const handleGeneratePDF = (purchaseOrder: PurchaseOrder) => {
+    setSelectedOrderForPDF(purchaseOrder);
+    setIsVATModalOpen(true);
+  };
+
+  const handleVATSelection = async (withVAT: boolean) => {
+    setIsVATModalOpen(false);
+    if (!selectedOrderForPDF) return;
+    
     try {
-      const resp = await getPurchaseOrderDetails(purchaseOrder.id);
+      const resp = await getPurchaseOrderDetails(selectedOrderForPDF.id);
       if (!resp?.success || !resp.data) {
         throw new Error(resp?.message || 'Failed to load purchase order details');
       }
-      const withVAT = window.confirm('Generate PDF with VAT? Click Cancel for without VAT.');
       await generatePurchaseOrderPDF(resp.data, { withVAT });
       toast({
         title: 'Success',
-        description: 'Purchase Order PDF generated.',
+        description: 'Purchase Order PDF generated successfully.',
         variant: 'success',
       });
     } catch (error: any) {
@@ -296,6 +306,8 @@ export const PurchaseOrders = () => {
         description: error.message || 'Failed to generate PDF',
         variant: 'destructive',
       });
+    } finally {
+      setSelectedOrderForPDF(null);
     }
   };
 
@@ -565,6 +577,14 @@ export const PurchaseOrders = () => {
         mode={selectedPurchaseOrder ? 'edit' : 'create'}
         purchaseOrder={selectedPurchaseOrder}
         onSuccess={handleCreateSuccess}
+      />
+
+      {/* VAT Selection Modal */}
+      <VATSelectionModal
+        isOpen={isVATModalOpen}
+        onClose={() => setIsVATModalOpen(false)}
+        onConfirm={handleVATSelection}
+        purchaseOrderNo={selectedOrderForPDF?.purchase_no}
       />
     </div>
   );

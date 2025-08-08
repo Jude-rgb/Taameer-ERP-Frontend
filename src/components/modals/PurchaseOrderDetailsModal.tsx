@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ActionButton } from '@/components/ui/action-button';
 import { AddPaymentModal } from '@/components/modals/AddPaymentModal';
+import { VATSelectionModal } from '@/components/modals/VATSelectionModal';
 import { usePurchaseOrderStore } from '@/store/usePurchaseOrderStore';
 import { useToast } from '@/hooks/use-toast';
 import { formatDate } from "@/utils/formatters";
@@ -90,6 +91,7 @@ export const PurchaseOrderDetailsModal = ({
   const [modalError, setModalError] = useState<string | null>(null);
   const [isMarkingStock, setIsMarkingStock] = useState(false);
   const [isAddPaymentModalOpen, setIsAddPaymentModalOpen] = useState(false);
+  const [isVATModalOpen, setIsVATModalOpen] = useState(false);
   useEffect(() => {
     if (isOpen && purchaseOrder) {
       setModalError(null);
@@ -290,17 +292,21 @@ export const PurchaseOrderDetailsModal = ({
   };
 
 
-  const handleGeneratePDF = async () => {
+  const handleGeneratePDF = () => {
+    setIsVATModalOpen(true);
+  };
+
+  const handleVATSelection = async (withVAT: boolean) => {
+    setIsVATModalOpen(false);
     try {
       const resp = await getPurchaseOrderDetails(purchaseOrder.id);
       if (!resp?.success || !resp.data) {
         throw new Error(resp?.message || 'Failed to load purchase order details');
       }
-      const withVAT = window.confirm('Generate PDF with VAT? Click Cancel for without VAT.');
       await generatePurchaseOrderPDF(resp.data, { withVAT });
       toast({
         title: 'Success',
-        description: 'Purchase Order PDF generated.',
+        description: 'Purchase Order PDF generated successfully.',
         variant: 'success',
       });
     } catch (error: any) {
@@ -587,6 +593,14 @@ export const PurchaseOrderDetailsModal = ({
         onClose={() => setIsAddPaymentModalOpen(false)}
         purchaseOrder={purchaseOrder}
         onSuccess={handlePaymentSuccess}
+      />
+
+      {/* VAT Selection Modal */}
+      <VATSelectionModal
+        isOpen={isVATModalOpen}
+        onClose={() => setIsVATModalOpen(false)}
+        onConfirm={handleVATSelection}
+        purchaseOrderNo={purchaseOrder.purchase_no}
       />
 
     </Dialog>

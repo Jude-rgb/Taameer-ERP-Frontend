@@ -14,8 +14,8 @@ export interface PurchaseOrderDetails {
   purchase_status?: string;
   payment_status?: string;
   note?: string | null;
-  currency_type?: string; // e.g., 'AED'
-  currency_decimal_places?: number; // e.g., 2
+  currency_type?: string;
+  currency_decimal_places?: number;
   user_name?: string;
   created_at?: string;
   purchases_product_details: Array<{
@@ -68,7 +68,7 @@ export async function generatePurchaseOrderPDF(
   });
   const fmt = (n: number) => `${nf.format(n)}`;
 
-  // Compute totals from line items to be robust
+  // Compute totals from line items
   const subTotal = data.purchases_product_details.reduce((sum, item) => {
     const unit = toNumber(item.unit_cost);
     const qty = toNumber(item.purchase_quantity);
@@ -77,7 +77,7 @@ export async function generatePurchaseOrderPDF(
   const vatTotal = data.purchases_product_details.reduce((sum, item) => sum + toNumber(item.vat), 0);
   const grandTotal = opts.withVAT ? subTotal + vatTotal : subTotal;
 
-  // Load logo as data URL (if available)
+  // Load logo
   const loadImageAsDataURL = async (url: string): Promise<string | null> => {
     try {
       const res = await fetch(url);
@@ -99,143 +99,143 @@ export async function generatePurchaseOrderPDF(
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
-  const headerHeight = 28; // space reserved for header on each page
-  const footerHeight = 15; // footer space
+  const margin = 15;
+  const headerHeight = 30;
+  const footerHeight = 15;
 
-  const primaryRGB: [number, number, number] = [32, 101, 136];
-  const mutedRGB: [number, number, number] = [100, 116, 139];
+  // Colors inspired by the reference image
+  const darkGray: [number, number, number] = [64, 64, 64];
+  const lightGray: [number, number, number] = [245, 245, 245];
+  const borderGray: [number, number, number] = [200, 200, 200];
 
   const drawHeader = () => {
-    // Top bar background
-    doc.setFillColor(245, 247, 250);
-    doc.rect(0, 0, pageWidth, headerHeight, 'F');
-
-    // Logo
+    // Logo placeholder box
+    doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
+    doc.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
+    doc.rect(margin, 10, 25, 15, 'FD');
+    
     if (logoDataUrl) {
-      doc.addImage(logoDataUrl, 'PNG', 12, 6, 22, 16, undefined, 'FAST');
+      doc.addImage(logoDataUrl, 'PNG', margin + 2, 12, 21, 11, undefined, 'FAST');
+    } else {
+      doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
+      doc.setFontSize(8);
+      doc.text('YOUR LOGO', margin + 12.5, 18, { align: 'center' });
+      doc.text('HERE', margin + 12.5, 21, { align: 'center' });
     }
 
-    // Title and meta
-    doc.setTextColor(primaryRGB[0], primaryRGB[1], primaryRGB[2]);
-    doc.setFontSize(16);
-    doc.text('Purchase Order', pageWidth / 2, 14, { align: 'center' });
+    // Purchase Order title
+    doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
+    doc.setFontSize(20);
+    doc.text('PURCHASE ORDER', pageWidth - margin, 20, { align: 'right' });
 
-    doc.setTextColor(33, 37, 41);
+    // Date and PO# info
     doc.setFontSize(10);
-    doc.text(`PO No: ${data.purchase_no}`, pageWidth - 12, 9, { align: 'right' });
-    doc.text(`Date: ${data.purchase_date}`, pageWidth - 12, 15, { align: 'right' });
+    doc.text(`DATE: ${data.purchase_date}`, pageWidth - margin, 28, { align: 'right' });
+    doc.text(`PO#: ${data.purchase_no}`, pageWidth - margin, 33, { align: 'right' });
   };
 
-  const drawFooter = (pageNumber: number) => {
-    doc.setDrawColor(230, 235, 241);
-    doc.line(12, pageHeight - footerHeight, pageWidth - 12, pageHeight - footerHeight);
-    doc.setTextColor(mutedRGB[0], mutedRGB[1], mutedRGB[2]);
+  const drawCompanyInfo = (startY: number) => {
+    let y = startY;
+    
+    // Company info section
+    doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
     doc.setFontSize(9);
-    doc.text(`Page ${pageNumber}`, pageWidth / 2, pageHeight - 6, { align: 'center' });
+    doc.text('Company Name:', margin, y);
+    doc.text('AL DAR CONSTRUCTION', margin, y + 4);
+    doc.text('(TAAMEER CONSTRUCTION MATERIALS)', margin, y + 8);
+    doc.text('Oman, Muscat Grand Mall', margin, y + 12);
+    doc.text('CR: 1119792', margin, y + 16);
+    doc.text('taameer@gethor.com', margin, y + 20);
 
-    // Company contact strip
-    doc.setFontSize(8);
-    const footerText = 'P.O.BOX 1950, PC 130, Al khuwair, Muscat Grand Mall | TEL: +968 79903828, 93655315 | taameer@gethor.com';
-    doc.text(footerText, pageWidth / 2, pageHeight - 10, { align: 'center' });
+    return y + 28;
   };
 
-  // First-page company and supplier sections
-  const drawCompanyAndSupplierBlocks = () => {
-    let y = headerHeight + 6;
-
-    // Left: Company details (from user request)
-    doc.setTextColor(33, 37, 41);
+  const drawVendorShipToSection = (startY: number) => {
+    let y = startY;
+    
+    // Vendor and Ship To headers (black background)
+    doc.setFillColor(darkGray[0], darkGray[1], darkGray[2]);
+    doc.rect(margin, y, (pageWidth - 2 * margin) / 2 - 2, 8, 'F');
+    doc.rect(margin + (pageWidth - 2 * margin) / 2 + 2, y, (pageWidth - 2 * margin) / 2 - 2, 8, 'F');
+    
+    doc.setTextColor(255, 255, 255);
     doc.setFontSize(10);
-    const companyLines = [
-      'AL DAR CONSTRUCTION',
-      '(TAAMEER CONSTRUCTION MATERIALS)',
-      'Oman, Muscat Grand Mall',
-      'CR: 1119792',
-      'taameer@gethor.com'
-    ];
-    companyLines.forEach((line, i) => doc.text(line, 12, y + i * 5));
+    doc.text('VENDOR INFORMATION', margin + 2, y + 5);
+    doc.text('SHIP TO', margin + (pageWidth - 2 * margin) / 2 + 4, y + 5);
 
-    // Right: Supplier box
-    const rightX = pageWidth / 2 + 10;
-    doc.setFontSize(11);
-    doc.setTextColor(primaryRGB[0], primaryRGB[1], primaryRGB[2]);
-    doc.text('Supplier', rightX, y);
+    y += 8;
 
-    doc.setTextColor(33, 37, 41);
-    doc.setFontSize(10);
-
+    // Vendor info box
+    doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
+    doc.rect(margin, y, (pageWidth - 2 * margin) / 2 - 2, 25, 'D');
+    
     const supplierName = data.suppliers.supplier_type === 'business_type'
       ? (data.suppliers.business_name || 'N/A')
       : `${data.suppliers.first_name || ''} ${data.suppliers.last_name || ''}`.trim() || 'N/A';
 
-    const supplierLines = [
-      supplierName,
-      data.suppliers.address_line_1 || '-',
-      `Mobile: ${data.suppliers.mobile_number || '-'}`,
-      `Email: ${data.suppliers.email || '-'}`,
-    ];
-
-    supplierLines.forEach((line, i) => doc.text(line, rightX, y + 6 + i * 5));
-
-    // Quotation ref + Shipping details boxes
-    y += 34;
-    doc.setDrawColor(230, 235, 241);
-    doc.setFillColor(249, 250, 252);
-
-    // Quotation Ref box
-    doc.rect(12, y, pageWidth - 24, 10, 'S');
+    doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
     doc.setFontSize(9);
-    doc.setTextColor(mutedRGB[0], mutedRGB[1], mutedRGB[2]);
-    doc.text('Quotation Ref', 16, y + 4);
-    doc.setTextColor(33, 37, 41);
-    doc.setFontSize(10);
-    doc.text(`${data.quotation_ref || '-'}`, 16, y + 8);
+    doc.text(supplierName, margin + 2, y + 5);
+    doc.text(data.suppliers.address_line_1 || '-', margin + 2, y + 9);
+    doc.text(`Mobile: ${data.suppliers.mobile_number || '-'}`, margin + 2, y + 13);
+    doc.text(`Email: ${data.suppliers.email || '-'}`, margin + 2, y + 17);
 
-    // Shipping Details box (as requested)
-    const y2 = y + 12;
-    doc.rect(12, y2, pageWidth - 24, 12, 'S');
-    doc.setFontSize(9);
-    doc.setTextColor(mutedRGB[0], mutedRGB[1], mutedRGB[2]);
-    doc.text('Shipping Details', 16, y2 + 4);
-    doc.setTextColor(33, 37, 41);
-    doc.setFontSize(10);
-    doc.text('Address - Taameer Warehouse(Barka)  contact - Younas(79903834)', 16, y2 + 8);
+    // Ship To box
+    doc.rect(margin + (pageWidth - 2 * margin) / 2 + 2, y, (pageWidth - 2 * margin) / 2 - 2, 25, 'D');
+    doc.text('Address - Taameer Warehouse(Barka)', margin + (pageWidth - 2 * margin) / 2 + 4, y + 5);
+    doc.text('Contact - Younas(79903834)', margin + (pageWidth - 2 * margin) / 2 + 4, y + 9);
 
-    return y2 + 16; // next Y start
+    return y + 30;
   };
 
-  // Draw header/footer for first page
-  drawHeader();
-  const firstTableStartY = drawCompanyAndSupplierBlocks() + 4;
+  const drawFooter = (pageNumber: number) => {
+    doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
+    doc.line(margin, pageHeight - footerHeight, pageWidth - margin, pageHeight - footerHeight);
+    doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
+    doc.setFontSize(8);
+    doc.text(`Page ${pageNumber}`, pageWidth / 2, pageHeight - 8, { align: 'center' });
+    doc.text('P.O.BOX 1950, PC 130, Al khuwair, Muscat Grand Mall | TEL: +968 79903828, 93655315 | taameer@gethor.com', 
+      pageWidth / 2, pageHeight - 4, { align: 'center' });
+  };
 
-  // Build table rows
-  const body: RowInput[] = data.purchases_product_details.map((item) => {
+  // Draw first page content
+  drawHeader();
+  let currentY = drawCompanyInfo(45);
+  currentY = drawVendorShipToSection(currentY);
+
+  // Table data
+  const tableBody: RowInput[] = data.purchases_product_details.map((item, index) => {
     const unit = toNumber(item.unit_cost);
     const qty = toNumber(item.purchase_quantity);
     const lineTotal = unit * qty;
     return [
+      String(index + 1),
       String(item.product_name || item.product_code || ''),
-      `${fmt(unit)}`,
       `${fmt(qty)}`,
+      `${fmt(unit)}`,
       `${fmt(lineTotal)}`,
     ];
   });
 
-  // Add table using autoTable
+  // Add table
   autoTable(doc, {
-    head: [[
-      'Item Description',
-      `Unit Price (${currency})`,
-      'Quantity',
-      `Total (${currency})`
-    ]],
-    body,
-    startY: firstTableStartY,
-    margin: { top: headerHeight + 2, bottom: footerHeight + 2, left: 12, right: 12 },
-    styles: { fontSize: 9, cellPadding: 3 },
-    headStyles: { fillColor: primaryRGB, halign: 'center', textColor: 255 },
-    alternateRowStyles: { fillColor: [250, 252, 255] },
-    didDrawPage: (dataHook) => {
+    head: [['ITEM #', 'DESCRIPTION', 'QTY', 'PRICE', 'TOTAL']],
+    body: tableBody,
+    startY: currentY + 5,
+    margin: { top: headerHeight + 5, bottom: footerHeight + 5, left: margin, right: margin },
+    styles: { 
+      fontSize: 9, 
+      cellPadding: 3,
+      lineColor: borderGray,
+      lineWidth: 0.1
+    },
+    headStyles: { 
+      fillColor: darkGray, 
+      textColor: 255,
+      fontStyle: 'bold'
+    },
+    alternateRowStyles: { fillColor: [250, 250, 250] },
+    didDrawPage: (data) => {
       drawHeader();
       const pageNumber = (doc as any).internal.getNumberOfPages();
       drawFooter(pageNumber);
@@ -243,52 +243,61 @@ export async function generatePurchaseOrderPDF(
   });
 
   // Totals section
-  let yAfter = (doc as any).lastAutoTable?.finalY || firstTableStartY;
-  if (yAfter > pageHeight - 50) {
+  let yAfter = (doc as any).lastAutoTable?.finalY || currentY + 50;
+  
+  if (yAfter > pageHeight - 60) {
     doc.addPage();
     drawHeader();
     drawFooter((doc as any).internal.getNumberOfPages());
-    yAfter = headerHeight + 10;
+    yAfter = headerHeight + 20;
   }
 
-  const summaryX = pageWidth - 12 - 70; // 70mm wide
-  const rowHeight = 8;
+  // Comments section
+  yAfter += 10;
+  doc.setFillColor(darkGray[0], darkGray[1], darkGray[2]);
+  doc.rect(margin, yAfter, (pageWidth - 2 * margin) * 0.6, 8, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(10);
+  doc.text('Comments or Special Instructions', margin + 2, yAfter + 5);
 
-  const drawSummaryRow = (label: string, value: string, isEmphasis = false) => {
-    doc.setFontSize(isEmphasis ? 11 : 10);
-    doc.setTextColor(33, 37, 41);
-    doc.text(label, summaryX, yAfter);
-    doc.text(value, pageWidth - 12, yAfter, { align: 'right' });
-    yAfter += rowHeight;
+  // Comments box
+  doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
+  doc.rect(margin, yAfter + 8, (pageWidth - 2 * margin) * 0.6, 20, 'D');
+  if (data.note) {
+    doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
+    doc.setFontSize(9);
+    doc.text(String(data.note), margin + 2, yAfter + 13);
+  }
+
+  // Totals section (right side)
+  const totalsX = margin + (pageWidth - 2 * margin) * 0.65;
+  const totalsWidth = (pageWidth - 2 * margin) * 0.35;
+  
+  const drawTotalRow = (label: string, value: string, y: number, isGrandTotal = false) => {
+    if (isGrandTotal) {
+      doc.setFillColor(darkGray[0], darkGray[1], darkGray[2]);
+      doc.rect(totalsX, y - 4, totalsWidth, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(10);
+    } else {
+      doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
+      doc.setFontSize(9);
+    }
+    
+    doc.text(label, totalsX + 2, y);
+    doc.text(value, totalsX + totalsWidth - 2, y, { align: 'right' });
   };
 
-  drawSummaryRow('Sub Total', `${fmt(subTotal)} ${currency}`);
-  drawSummaryRow('VAT', `${fmt(vatTotal)} ${currency}`);
-  if (!opts.withVAT) {
-    drawSummaryRow('Grand Total (Without VAT)', `${fmt(grandTotal)} ${currency}`, true);
+  drawTotalRow('SUB TOTAL', `${fmt(subTotal)}`, yAfter + 13);
+  if (opts.withVAT) {
+    drawTotalRow('TAX', `${fmt(vatTotal)}`, yAfter + 21);
+    drawTotalRow('GRAND TOTAL', `${fmt(grandTotal)}`, yAfter + 33, true);
   } else {
-    drawSummaryRow('Grand Total', `${fmt(grandTotal)} ${currency}`, true);
+    drawTotalRow('TAX', '0.000', yAfter + 21);
+    drawTotalRow('GRAND TOTAL', `${fmt(grandTotal)}`, yAfter + 33, true);
   }
 
-  // Notes
-  if (data.note) {
-    yAfter += 6;
-    doc.setFontSize(9);
-    doc.setTextColor(mutedRGB[0], mutedRGB[1], mutedRGB[2]);
-    doc.text('Note:', 12, yAfter);
-    doc.setTextColor(33, 37, 41);
-    doc.text(String(data.note), 22, yAfter);
-  }
-
-  // Legal / info lines
-  yAfter += 16;
-  doc.setFontSize(8);
-  doc.setTextColor(mutedRGB[0], mutedRGB[1], mutedRGB[2]);
-  doc.text('THIS IS A COMPUTER-GENERATED DOCUMENT. NO SIGNATURE REQUIRED.', pageWidth / 2, yAfter, { align: 'center' });
-  yAfter += 5;
-  doc.text('ALL SHIPPING DOCUMENTS SHOULD BE ON THE NAME OF AL DAR CONSTRUCTION LLC.', pageWidth / 2, yAfter, { align: 'center' });
-
-  // Save file
-  const fileName = `${(data.purchase_no || 'purchase_order').replace(/\//g, '_')}.pdf`;
+  // Save with purchase order number as filename
+  const fileName = `${data.purchase_no.replace(/\//g, '_')}.pdf`;
   doc.save(fileName);
 }
