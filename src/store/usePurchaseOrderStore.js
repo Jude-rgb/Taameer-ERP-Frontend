@@ -1,4 +1,5 @@
-import { create } from "zustand";
+import { createStore } from "zustand/vanilla";
+import { useStore as useZustandStore } from "zustand/react";
 import {
   getPurchaseOrders,
   getPurchaseOrderDetails,
@@ -12,7 +13,7 @@ import {
  * Purchase Order Store - Zustand store for purchase order data
  * Follows the same pattern as useSupplierStore and useUserStore
  */
-export const usePurchaseOrderStore = create((set, get) => ({
+export const purchaseOrderStore = createStore((set, get) => ({
   // State
   purchaseOrders: [],
   selectedPurchaseOrder: null,
@@ -276,3 +277,5 @@ export const usePurchaseOrderStore = create((set, get) => ({
     return purchaseOrders.find((order) => order.id === orderId);
   },
 }));
+
+export const usePurchaseOrderStore = () => useZustandStore(purchaseOrderStore);
