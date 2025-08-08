@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { LucideIcon } from 'lucide-react';
+import { LucideIcon, Loader2 } from 'lucide-react';
 
 interface ActionButtonProps {
   icon: LucideIcon;
@@ -12,6 +12,7 @@ interface ActionButtonProps {
   className?: string;
   disabled?: boolean;
   color?: 'default' | 'red' | 'green' | 'blue' | 'yellow' | 'purple';
+  isLoading?: boolean;
 }
 
 export function ActionButton({
@@ -22,7 +23,8 @@ export function ActionButton({
   size = 'sm',
   className = '',
   disabled = false,
-  color = 'default'
+  color = 'default',
+  isLoading = false
 }: ActionButtonProps) {
   const getColorClasses = () => {
     switch (color) {
@@ -48,10 +50,14 @@ export function ActionButton({
           variant={variant}
           size={size}
           onClick={onClick}
-          disabled={disabled}
+          disabled={disabled || isLoading}
           className={`hover:scale-105 transition-all duration-200 ${getColorClasses()} ${className}`}
         >
-          <Icon className="w-4 h-4" />
+          {isLoading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Icon className="w-4 h-4" />
+          )}
         </Button>
       </TooltipTrigger>
       <TooltipContent>

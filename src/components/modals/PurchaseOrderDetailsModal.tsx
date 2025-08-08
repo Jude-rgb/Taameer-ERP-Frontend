@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Package, DollarSign, Edit, Trash2, FileText, Calendar, Building2, CreditCard, CheckCircle, Download, Plus, Eye, Phone, Mail, MapPin, Hash } from 'lucide-react';
+import { Package, DollarSign, Edit, Trash2, FileText, Calendar, Building2, CreditCard, CheckCircle, Download, Plus, Eye, Phone, Mail, MapPin, Hash, Edit3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ActionButton } from '@/components/ui/action-button';
+import { AddPaymentModal } from '@/components/modals/AddPaymentModal';
 import { usePurchaseOrderStore } from '@/store/usePurchaseOrderStore';
 import { useToast } from '@/hooks/use-toast';
 import { formatDate } from '@/utils/formatters';
+
 interface PurchaseOrder {
   id: number;
   purchase_no: string;
@@ -63,24 +65,30 @@ interface PurchaseOrderDetailsModalProps {
   purchaseOrder: PurchaseOrder | null;
   onEdit?: (purchaseOrder: PurchaseOrder) => void;
   onDelete?: (purchaseOrder: PurchaseOrder) => void;
+  onSuccess?: () => void; // Callback to refresh parent component
 }
 export const PurchaseOrderDetailsModal = ({
   isOpen,
   onClose,
   purchaseOrder,
   onEdit,
-  onDelete
+  onDelete,
+  onSuccess
 }: PurchaseOrderDetailsModalProps) => {
   const {
     getPurchasePayments,
     purchasePayments,
-    isLoading
+    isLoading,
+    markStockReceived,
+    getPurchaseOrderDetails
   } = usePurchaseOrderStore();
   const {
     toast
   } = useToast();
   const [activeTab, setActiveTab] = useState<'details' | 'payments'>('details');
   const [modalError, setModalError] = useState<string | null>(null);
+  const [isMarkingStock, setIsMarkingStock] = useState(false);
+  const [isAddPaymentModalOpen, setIsAddPaymentModalOpen] = useState(false);
   useEffect(() => {
     if (isOpen && purchaseOrder) {
       setModalError(null);
@@ -206,20 +214,81 @@ export const PurchaseOrderDetailsModal = ({
   const canDelete = purchaseOrder.stock_status !== 'completed' && purchaseOrder.stock_status !== 'partially';
   const canAddPayment = purchaseOrder.payment_status !== 'done';
   const canMarkStockReceived = purchaseOrder.stock_status !== 'completed';
+  
+  // Check if there are any products with pending quantities
+  const hasPendingQuantities = purchaseOrder.purchases_product_details?.some(
+    product => product.purchase_quantity > product.total_quantity_received
+  ) || false;
   const handleAddPayment = () => {
-    toast({
-      title: "Info",
-      description: "Add payment functionality will be available when API is fully implemented.",
-      variant: "info"
-    });
+    setIsAddPaymentModalOpen(true);
   };
-  const handleMarkStockReceived = () => {
-    toast({
-      title: "Info",
-      description: "Mark stock received functionality will be available when API is fully implemented.",
-      variant: "info"
-    });
+
+  const handlePaymentSuccess = async () => {
+    // Refresh all purchase order data, not just payments
+    if (purchaseOrder) {
+      try {
+        // Refresh payments
+        await loadPayments();
+        
+        // Refresh the purchase order details to update payment status
+        // This will make the Add Payment button hide immediately
+        const updatedPurchaseOrder = await getPurchaseOrderDetails(purchaseOrder.id);
+        if (updatedPurchaseOrder.success && updatedPurchaseOrder.data) {
+          // The parent component will handle updating the purchase order data
+          // through the onSuccess callback
+        }
+        
+        // Also refresh the parent component to get updated purchase order data
+        if (onSuccess) {
+          onSuccess();
+        }
+      } catch (error) {
+        console.error('Error refreshing purchase order data:', error);
+      }
+    }
   };
+  const handleMarkStockReceived = async () => {
+    if (!purchaseOrder.purchases_product_details || purchaseOrder.purchases_product_details.length === 0) {
+      toast({
+        title: "No Products",
+        description: "No products found in this purchase order",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsMarkingStock(true);
+    try {
+      await markStockReceived(purchaseOrder.id, purchaseOrder.purchases_product_details);
+      toast({
+        title: "Success",
+        description: "Stock marked as received successfully",
+        variant: "success",
+      });
+
+      // Refresh purchase order details after successful operation
+      if (purchaseOrder) {
+        try {
+          await getPurchaseOrderDetails(purchaseOrder.id); // Refresh PO details in store
+          if (onSuccess) {
+            onSuccess(); // Trigger parent refresh
+          }
+        } catch (error) {
+          console.error('Error refreshing purchase order data:', error);
+        }
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to mark stock as received",
+        variant: "destructive"
+      });
+    } finally {
+      setIsMarkingStock(false);
+    }
+  };
+
+
   const handleGeneratePDF = () => {
     toast({
       title: "Info",
@@ -227,7 +296,8 @@ export const PurchaseOrderDetailsModal = ({
       variant: "info"
     });
   };
-  return <Dialog open={isOpen} onOpenChange={onClose}>
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -240,27 +310,35 @@ export const PurchaseOrderDetailsModal = ({
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Header Actions */}
-          <div className="flex flex-wrap gap-2 justify-between items-center">
-            <div className="flex flex-wrap gap-2">
-              {canAddPayment && <Button onClick={handleAddPayment} size="sm" className="bg-green-600 hover:bg-green-700">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Payment
-                </Button>}
-              {canMarkStockReceived && <Button onClick={handleMarkStockReceived} size="sm" variant="outline">
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Mark Stock Received
-                </Button>}
-              <Button onClick={handleGeneratePDF} size="sm" variant="outline">
-                <Download className="w-4 h-4 mr-2" />
-                Generate PDF
-              </Button>
-            </div>
-            <div className="flex gap-2">
-              {canEdit && onEdit && <ActionButton icon={Edit} tooltip="Edit Purchase Order" color="blue" onClick={() => onEdit(purchaseOrder)} />}
-              {canDelete && onDelete && <ActionButton icon={Trash2} tooltip="Delete Purchase Order" color="red" onClick={() => onDelete(purchaseOrder)} />}
-            </div>
-          </div>
+                     {/* Header Actions */}
+           <div className="flex flex-wrap gap-2 justify-between items-center">
+             <div className="flex flex-wrap gap-2">
+               {canAddPayment && <Button onClick={handleAddPayment} size="sm" className="bg-green-600 hover:bg-green-700">
+                   <Plus className="w-4 h-4 mr-2" />
+                   Add Payment
+                 </Button>}
+               
+                               {canMarkStockReceived && hasPendingQuantities && (
+                  <Button 
+                    onClick={handleMarkStockReceived} 
+                    size="sm" 
+                    variant="outline"
+                    disabled={isMarkingStock}
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    {isMarkingStock ? 'Marking...' : 'Mark Stock Received'}
+                  </Button>
+                )}
+               <Button onClick={handleGeneratePDF} size="sm" variant="outline">
+                 <Download className="w-4 h-4 mr-2" />
+                 Generate PDF
+               </Button>
+             </div>
+             <div className="flex gap-2">
+               {canEdit && onEdit && <ActionButton icon={Edit} tooltip="Edit Purchase Order" color="blue" onClick={() => onEdit(purchaseOrder)} />}
+               {canDelete && onDelete && <ActionButton icon={Trash2} tooltip="Delete Purchase Order" color="red" onClick={() => onDelete(purchaseOrder)} />}
+             </div>
+           </div>
 
           {/* Purchase Order Info */}
           <Card>
@@ -372,11 +450,11 @@ export const PurchaseOrderDetailsModal = ({
           </Card>
 
           {/* Tabs */}
-          <div className="flex space-x-1 bg-muted p-1 rounded-lg">
-            <button onClick={() => setActiveTab('details')} className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${activeTab === 'details' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+          <div className="grid w-full grid-cols-2 bg-muted/50 p-1 rounded-xl border border-border/50 h-15">
+            <button onClick={() => setActiveTab('details')} className={`flex items-center justify-center gap-2 transition-all duration-300 rounded-lg px-4 py-2 text-sm font-medium h-10 ${activeTab === 'details' ? 'bg-primary text-white shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'}`}>
               Product Details
             </button>
-            <button onClick={() => setActiveTab('payments')} className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${activeTab === 'payments' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+            <button onClick={() => setActiveTab('payments')} className={`flex items-center justify-center gap-2 transition-all duration-300 rounded-lg px-4 py-2 text-sm font-medium h-10 ${activeTab === 'payments' ? 'bg-primary text-white shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'}`}>
               Payment History
             </button>
           </div>
@@ -454,13 +532,30 @@ export const PurchaseOrderDetailsModal = ({
                           </div>
                           <div className="text-right">
                             <p className="text-sm font-medium">{formatDate(payment.date)}</p>
-                            {payment.reference_document && <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => window.open(`https://taameerv2staging.gethorcrm.com/${payment.reference_document}`, '_blank')}>
+                            {/* Only show View Document button if reference_document exists and is not N/A or undefined */}
+                            {payment.reference_document && 
+                             payment.reference_document.trim() !== '' && 
+                             payment.reference_document.trim() !== 'N/A' && 
+                             payment.reference_document.trim() !== 'undefined' && (
+                              <Button 
+                                variant="link" 
+                                size="sm" 
+                                className="p-0 h-auto" 
+                                onClick={() => window.open(`https://taameerv2staging.gethorcrm.com/${payment.reference_document}`, '_blank')}
+                              >
                                 <Eye className="w-4 h-4 mr-1" />
                                 View Document
-                              </Button>}
+                              </Button>
+                            )}
                           </div>
                         </div>
-                        {payment.payment_note && <p className="text-sm text-muted-foreground">{payment.payment_note}</p>}
+                        {/* Only show payment note if it exists and is not empty, N/A, or undefined */}
+                        {payment.payment_note && 
+                         payment.payment_note.trim() !== '' && 
+                         payment.payment_note.trim() !== 'N/A' && 
+                         payment.payment_note.trim() !== 'undefined' && (
+                          <p className="text-sm text-muted-foreground">{payment.payment_note}</p>
+                        )}
                       </div>)}
                   </div> : <div className="text-center py-8">
                     <CreditCard className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -470,5 +565,15 @@ export const PurchaseOrderDetailsModal = ({
             </Card>}
         </div>
       </DialogContent>
-    </Dialog>;
+
+      {/* Add Payment Modal */}
+      <AddPaymentModal
+        isOpen={isAddPaymentModalOpen}
+        onClose={() => setIsAddPaymentModalOpen(false)}
+        purchaseOrder={purchaseOrder}
+        onSuccess={handlePaymentSuccess}
+      />
+
+    </Dialog>
+  );
 };

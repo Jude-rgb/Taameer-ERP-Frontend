@@ -9,7 +9,8 @@ import {
   Calendar, 
   Building2,
   Download,
-  PackageCheck
+  PackageCheck,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +20,9 @@ import { DataTable, Column } from '@/components/ui/data-table';
 import { ActionButton } from '@/components/ui/action-button';
 import { DeleteConfirmModal } from '@/components/modals/DeleteConfirmModal';
 import { PurchaseOrderDetailsModal } from '@/components/modals/PurchaseOrderDetailsModal';
+import { UpdateReceiveQtyModal } from '@/components/modals/UpdateReceiveQtyModal';
+import { PurchaseOrderCreateModal } from '@/components/modals/PurchaseOrderCreateModal';
+import { PurchaseOrderUpdateModal } from '@/components/modals/PurchaseOrderUpdateModal';
 
 import { usePurchaseOrderStore } from '@/store/usePurchaseOrderStore';
 import { useToast } from '@/hooks/use-toast';
@@ -54,6 +58,8 @@ export const PurchaseOrders = () => {
     purchaseOrders, 
     fetchPurchaseOrders, 
     deletePurchaseOrder,
+    getPurchaseOrderDetails,
+    selectedPurchaseOrder: storeSelectedPurchaseOrder,
     isLoading
   } = usePurchaseOrderStore();
   
@@ -62,7 +68,12 @@ export const PurchaseOrders = () => {
   const [selectedPurchaseOrder, setSelectedPurchaseOrder] = useState<PurchaseOrder | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isUpdateQtyModalOpen, setIsUpdateQtyModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [selectedPurchaseOrderIds, setSelectedPurchaseOrderIds] = useState<Set<number | string>>(new Set());
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deletingPurchaseOrderId, setDeletingPurchaseOrderId] = useState<number | null>(null);
   
 
   // Helper function to get supplier name - must be defined before useMemo
@@ -95,12 +106,17 @@ export const PurchaseOrders = () => {
 
 
   const handleEditPurchaseOrder = (purchaseOrder: PurchaseOrder) => {
-    console.log('Edit purchase order:', purchaseOrder); // Debug log
-    toast({
-      title: "Info",
-      description: "Edit purchase order functionality will be available when API is fully implemented.",
-      variant: "info",
-    });
+    setSelectedPurchaseOrder(purchaseOrder);
+    setIsCreateModalOpen(true);
+  };
+
+  const handleCreatePurchaseOrder = () => {
+    setIsCreateModalOpen(true);
+  };
+
+  const handleCreateSuccess = () => {
+    // Refresh the purchase orders list
+    fetchPurchaseOrders();
   };
 
   const handleDeletePurchaseOrder = (purchaseOrder: PurchaseOrder) => {
@@ -109,31 +125,78 @@ export const PurchaseOrders = () => {
     setIsDeleteModalOpen(true);
   };
 
-  const handleUpdateReceivedQty = (purchaseOrder: PurchaseOrder) => {
+  const handleUpdateReceivedQty = async (purchaseOrder: PurchaseOrder) => {
     console.log('Update received quantity:', purchaseOrder); // Debug log
+    try {
+      // Fetch the full purchase order details with products
+      await getPurchaseOrderDetails(purchaseOrder.id);
+      setSelectedPurchaseOrder(storeSelectedPurchaseOrder);
+      setIsUpdateQtyModalOpen(true);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to load purchase order details",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateQtySuccess = () => {
+    // Only refresh the purchase orders list if we need to update the table
+    // The store will handle updating the selected purchase order
     toast({
-      title: "Info",
-      description: "Update received quantity functionality will be available when API is fully implemented.",
-      variant: "info",
+      title: "Success",
+      description: "Received quantities updated successfully",
+      variant: "success",
     });
   };
 
   const handleRowClick = (purchaseOrder: PurchaseOrder) => {
     console.log('Row clicked:', purchaseOrder); // Debug log
+    // Only set the selected purchase order, don't fetch details unless needed
     setSelectedPurchaseOrder(purchaseOrder);
     setIsDetailsModalOpen(true);
   };
 
   const handleDetailsEdit = (purchaseOrder: PurchaseOrder) => {
-    handleEditPurchaseOrder(purchaseOrder);
+    setSelectedPurchaseOrder(purchaseOrder);
+    setIsUpdateModalOpen(true);
   };
 
   const handleDetailsDelete = (purchaseOrder: PurchaseOrder) => {
     handleDeletePurchaseOrder(purchaseOrder);
   };
 
+  const handleDetailsSuccess = async () => {
+    // Refresh the purchase orders list
+    await fetchPurchaseOrders();
+    
+    // If we have a selected purchase order, refresh its details
+    if (selectedPurchaseOrder) {
+      try {
+        const updatedPurchaseOrder = await getPurchaseOrderDetails(selectedPurchaseOrder.id);
+        if (updatedPurchaseOrder.success && updatedPurchaseOrder.data) {
+          // Update the selected purchase order with fresh data
+          setSelectedPurchaseOrder(updatedPurchaseOrder.data);
+        }
+      } catch (error) {
+        console.error('Error refreshing selected purchase order:', error);
+      }
+    }
+  };
+
   const confirmDelete = async () => {
     if (!selectedPurchaseOrder) return;
+    
+    setIsDeleting(true);
+    setDeletingPurchaseOrderId(selectedPurchaseOrder.id);
+    
+    // Show immediate feedback
+    toast({
+      title: "Deleting...",
+      description: `Deleting purchase order ${selectedPurchaseOrder.purchase_no}`,
+      variant: "default",
+    });
     
     try {
       await deletePurchaseOrder(selectedPurchaseOrder.id);
@@ -150,6 +213,9 @@ export const PurchaseOrders = () => {
         description: error.message || "Failed to delete purchase order",
         variant: "destructive",
       });
+    } finally {
+      setIsDeleting(false);
+      setDeletingPurchaseOrderId(null);
     }
   };
 
@@ -337,9 +403,10 @@ export const PurchaseOrders = () => {
             )}
             {canDelete && (
               <ActionButton
-                icon={Trash2}
-                tooltip="Delete Purchase Order"
+                icon={deletingPurchaseOrderId === order.id ? Loader2 : Trash2}
+                tooltip={deletingPurchaseOrderId === order.id ? "Deleting..." : "Delete Purchase Order"}
                 color="red"
+                isLoading={deletingPurchaseOrderId === order.id}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleDeletePurchaseOrder(order);
@@ -406,6 +473,7 @@ export const PurchaseOrders = () => {
                 Export to Excel
               </Button>
               <Button 
+                onClick={handleCreatePurchaseOrder}
                 className="hover:scale-105 transition-all duration-200 bg-primary hover:bg-primary-hover"
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -437,6 +505,14 @@ export const PurchaseOrders = () => {
         purchaseOrder={selectedPurchaseOrder}
         onEdit={handleDetailsEdit}
         onDelete={handleDetailsDelete}
+        onSuccess={handleDetailsSuccess}
+      />
+
+      <PurchaseOrderUpdateModal
+        isOpen={isUpdateModalOpen}
+        onClose={() => setIsUpdateModalOpen(false)}
+        purchaseOrder={selectedPurchaseOrder}
+        onSuccess={handleCreateSuccess}
       />
 
 
@@ -446,6 +522,35 @@ export const PurchaseOrders = () => {
         onConfirm={confirmDelete}
         title="Delete Purchase Order"
         description={`Are you sure you want to delete purchase order ${selectedPurchaseOrder?.purchase_no}? This action cannot be undone.`}
+        isLoading={isDeleting}
+        loadingText="Deleting Purchase Order..."
+      />
+
+      {/* Update Received Quantity Modal */}
+      {storeSelectedPurchaseOrder && (
+        <UpdateReceiveQtyModal
+          isOpen={isUpdateQtyModalOpen}
+          onClose={() => setIsUpdateQtyModalOpen(false)}
+          purchaseId={storeSelectedPurchaseOrder.id}
+          purchaseNo={storeSelectedPurchaseOrder.purchase_no}
+          purchaseDate={storeSelectedPurchaseOrder.purchase_date}
+          supplier={storeSelectedPurchaseOrder.suppliers}
+          products={storeSelectedPurchaseOrder.purchases_product_details || []}
+          onSuccess={handleUpdateQtySuccess}
+          onRefreshPurchaseOrder={handleDetailsSuccess}
+        />
+      )}
+
+      {/* Create/Edit Purchase Order Modal */}
+      <PurchaseOrderCreateModal
+        isOpen={isCreateModalOpen}
+        onClose={() => {
+          setIsCreateModalOpen(false);
+          setSelectedPurchaseOrder(null);
+        }}
+        mode={selectedPurchaseOrder ? 'edit' : 'create'}
+        purchaseOrder={selectedPurchaseOrder}
+        onSuccess={handleCreateSuccess}
       />
     </div>
   );
