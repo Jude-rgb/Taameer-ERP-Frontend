@@ -28,7 +28,7 @@ import { usePurchaseOrderStore } from '@/store/usePurchaseOrderStore';
 import { useToast } from '@/hooks/use-toast';
 import { formatDate } from '@/utils/formatters';
 import { exportPurchaseOrdersToExcel } from '@/utils/exportToExcel';
-import { generatePurchaseOrderPDF } from '@/utils/generatePurchaseOrderPdf';
+import { generatePurchaseOrderPDF } from '@/components/pdf';
 import { VATSelectionModal } from '@/components/modals/VATSelectionModal';
 
 interface PurchaseOrder {
