@@ -11,6 +11,19 @@ export const getDeliveryNotes = async () => {
   }
 };
 
+// Create a delivery note from invoice payload
+export const createDeliveryNote = async (payload) => {
+  try {
+    const response = await api.post(
+      "/api/taameer/deliverynote/create",
+      payload
+    );
+    return processApiResponse(response);
+  } catch (error) {
+    throw new Error(handleApiError(error));
+  }
+};
+
 // Update delivered quantity for a single product line in a delivery note
 // Payload example: { product_id: 628, new_delivered: "1" }
 export const updateDeliveryQuantity = async ({ product_id, new_delivered }) => {

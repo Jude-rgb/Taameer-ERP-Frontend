@@ -17,16 +17,22 @@ interface DeleteConfirmModalProps {
   description: string;
   isLoading?: boolean;
   loadingText?: string;
+  confirmLabel?: string;
+  confirmVariant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+  icon?: React.ComponentType<{ className?: string }>;
 }
 
-export const DeleteConfirmModal = ({ 
-  isOpen, 
-  onClose, 
-  onConfirm, 
-  title, 
+export const DeleteConfirmModal = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
   description,
   isLoading = false,
-  loadingText = "Deleting..."
+  loadingText = "Deleting...",
+  confirmLabel = "Delete",
+  confirmVariant = "destructive",
+  icon: Icon = AlertTriangle,
 }: DeleteConfirmModalProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -36,9 +42,9 @@ export const DeleteConfirmModal = ({
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 300 }}
-            className="mx-auto mb-4 w-12 h-12 bg-destructive/10 rounded-full flex items-center justify-center"
+            className="mx-auto mb-4 w-12 h-12 bg-muted rounded-full flex items-center justify-center"
           >
-            <AlertTriangle className="w-6 h-6 text-destructive" />
+            <Icon className="w-6 h-6 text-primary" />
           </motion.div>
           <DialogTitle className="text-center">{title}</DialogTitle>
           <DialogDescription className="text-center">
@@ -60,7 +66,7 @@ export const DeleteConfirmModal = ({
             Cancel
           </Button>
           <Button 
-            variant="destructive" 
+            variant={confirmVariant}
             onClick={onConfirm}
             disabled={isLoading}
             className="hover:scale-105 transition-all duration-200"
@@ -71,7 +77,7 @@ export const DeleteConfirmModal = ({
                 {loadingText}
               </div>
             ) : (
-              "Delete"
+              confirmLabel
             )}
           </Button>
         </motion.div>

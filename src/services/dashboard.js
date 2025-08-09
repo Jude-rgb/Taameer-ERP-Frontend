@@ -32,3 +32,18 @@ export const fetchInvoices = async () => {
     throw new Error(handleApiError(error));
   }
 };
+
+/**
+ * Get single invoice details by ID
+ * @param {number|string} invoiceId
+ */
+export const getInvoiceDetails = async (invoiceId) => {
+  try {
+    const response = await api.post("api/taameer/invoice/getinvoice", {
+      invoice_id: String(invoiceId),
+    });
+    return processApiResponse(response);
+  } catch (error) {
+    throw new Error(handleApiError(error));
+  }
+};
