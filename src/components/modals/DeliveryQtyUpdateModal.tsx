@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import api from '@/services/config';
-import { completeDeliveryNote, removeUnloadingImage, updateDeliveryQuantity, uploadUnloading } from '@/services/deliveryNote.js';
+import { completeDeliveryNote, removeUnloadingImage, updateDeliveryQuantity, uploadUnloading, getDeliveryNotes } from '@/services/deliveryNote.js';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -105,6 +105,24 @@ export const DeliveryQtyUpdateModal: React.FC<DeliveryQtyUpdateModalProps> = ({ 
   const [fileInputKey, setFileInputKey] = useState(0);
 
   const baseUrl = (api?.defaults?.baseURL as string || '').replace(/\/+$/, '');
+
+  // Refresh only this modal's data (delivery_note_stock, images) after add/delete
+  const refreshSelf = async () => {
+    try {
+      if (!deliveryNote) return;
+      const resp = await getDeliveryNotes();
+      if (resp.success && Array.isArray(resp.data)) {
+        const updated = resp.data.find((n: any) => String(n.id) === String(deliveryNote.id));
+        if (updated) {
+          setLocalItems(updated.delivery_note_stock || []);
+          // Merge images to reflect latest changes without replacing the whole note
+          (deliveryNote as any).images_of_unloding = updated.images_of_unloding || [];
+        }
+      }
+    } catch {
+      // ignore refresh errors to avoid breaking UX
+    }
+  };
 
   // Keep items synced when a new note opens
   React.useEffect(() => {
@@ -268,6 +286,7 @@ export const DeliveryQtyUpdateModal: React.FC<DeliveryQtyUpdateModalProps> = ({ 
         setSelectedFile(null);
         setComment('');
         setFileInputKey((k) => k + 1);
+        await refreshSelf();
         onUpdated?.();
       } else {
         throw new Error(resp.message || 'Upload failed');
@@ -286,6 +305,7 @@ export const DeliveryQtyUpdateModal: React.FC<DeliveryQtyUpdateModalProps> = ({ 
       if (resp.success) {
         toast({ title: 'Removed', description: 'Unloading comment/image removed', variant: 'success' });
         setRemoveTargetId(null);
+        await refreshSelf();
         onUpdated?.();
       } else {
         throw new Error(resp.message || 'Remove failed');
