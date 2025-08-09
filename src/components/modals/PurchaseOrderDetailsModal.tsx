@@ -562,7 +562,12 @@ export const PurchaseOrderDetailsModal = ({
                                 variant="link" 
                                 size="sm" 
                                 className="p-0 h-auto" 
-                                onClick={() => window.open(`https://taameerv2staging.gethorcrm.com/${payment.reference_document}`, '_blank')}
+                                 onClick={() => {
+                                   const rawBase = (api?.defaults?.baseURL as string) || 'https://taameerv2staging.gethorcrm.com/';
+                                   const base = rawBase.replace(/\/+$/, '');
+                                   const path = payment.reference_document.replace(/^\/+/, '');
+                                   window.open(`${base}/${path}`, '_blank');
+                                 }}
                               >
                                 <Eye className="w-4 h-4 mr-1" />
                                 View Document

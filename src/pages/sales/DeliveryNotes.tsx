@@ -14,6 +14,7 @@ import { Switch } from '@/components/ui/switch';
 import DeliveryNoteFilter, { DeliveryNoteFilters } from '@/components/DeliveryNoteFilter';
 import { DeliveryNoteDetailsModal } from '@/components/modals/DeliveryNoteDetailsModal';
 import { DeliveryQtyUpdateModal } from '@/components/modals/DeliveryQtyUpdateModal';
+import { generateDeliveryNotePDF, type DeliveryNoteDetails } from '@/components/pdf';
 
 interface APIDeliveryNoteStock {
   id: number;
@@ -33,6 +34,7 @@ interface APIDeliveryNote {
   delivery_note_created_date: string;
   user_id: string;
   user_name: string;
+  delivery_charges: string | null;
   delivery_note_status: string; // completed | created | partially etc.
   delivery_note_number: string;
   supervisor_name?: string;
@@ -40,6 +42,8 @@ interface APIDeliveryNote {
   location?: string;
   invoice?: any;
   delivery_note_stock?: APIDeliveryNoteStock[];
+  // computed field for table search
+  searchableText?: string;
 }
 
 type DerivedStatus = 'delivered' | 'pending';
@@ -233,7 +237,20 @@ export const DeliveryNotes = () => {
           {getDerivedStatus(n) !== 'delivered' && (
             <ActionButton icon={PackageCheck} tooltip="Update Delivered Qty" color="yellow" onClick={(e) => { e?.stopPropagation?.(); setUpdateQtyNote(n); }} />
           )}
-          <ActionButton icon={Download} tooltip="Download PDF" color="green" onClick={(e) => e?.stopPropagation()} />
+          <ActionButton
+            icon={Download}
+            tooltip="Download PDF"
+            color="green"
+            onClick={async (e) => {
+              e?.stopPropagation?.();
+              try {
+                await generateDeliveryNotePDF(n as unknown as DeliveryNoteDetails, { openInNewTab: true });
+                toast({ title: 'Success', description: 'Delivery Note PDF opened in a new tab', variant: 'success' });
+              } catch (error: any) {
+                toast({ title: 'Error', description: error?.message || 'Failed to generate PDF', variant: 'destructive' });
+              }
+            }}
+          />
         </div>
       ),
     },

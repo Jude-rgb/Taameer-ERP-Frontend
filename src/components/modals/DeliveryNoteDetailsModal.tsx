@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Calendar, FileText, Truck, Phone, User2, MapPin, Download, Image as ImageIcon, Package, ClipboardList } from 'lucide-react';
 import api from '@/services/config';
+import { generateDeliveryNotePDF, type DeliveryNoteDetails } from '@/components/pdf';
 
 type DerivedStatus = 'delivered' | 'in_transit' | 'pending';
 
@@ -184,7 +185,15 @@ export const DeliveryNoteDetailsModal: React.FC<DeliveryNoteDetailsModalProps> =
                   </Badge>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        await generateDeliveryNotePDF((deliveryNote as unknown as DeliveryNoteDetails), { openInNewTab: true });
+                      } catch {}
+                    }}
+                  >
                     <Download className="w-4 h-4 mr-2" /> Download PDF
                   </Button>
                 </div>

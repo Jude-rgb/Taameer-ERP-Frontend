@@ -208,18 +208,16 @@ export const AddPaymentModal = ({
       // Extract only numeric value from grand_total (remove currency text)
       const numericAmount = purchaseOrder.grand_total.replace(/[^\d.]/g, '');
       
-      // Create FormData for file upload - send file as binary
+      // Create FormData for file upload - send file as binary (only if provided)
       const formDataToSend = new FormData();
       formDataToSend.append('date', formData.date);
       formDataToSend.append('quotation_ref', purchaseOrder.quotation_ref);
       formDataToSend.append('amount', numericAmount); // Send only numeric value
       formDataToSend.append('payment_method', formData.payment_method);
       
-      // Add file as binary (not JSON metadata)
+      // Add file as binary when provided (do not append placeholder)
       if (selectedFile) {
         formDataToSend.append('file', selectedFile);
-      } else {
-        formDataToSend.append('file', 'undefined');
       }
       
       formDataToSend.append('purchase_id', purchaseOrder.id.toString());
