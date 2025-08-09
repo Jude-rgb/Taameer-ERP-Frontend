@@ -200,12 +200,12 @@ export function DataTable<T extends Record<string, any>>({
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.05 }}
-                  className={`hover:bg-muted/20 transition-colors cursor-pointer ${
+                  className={`hover:bg-muted/20 transition-colors ${onRowClick ? 'cursor-pointer' : 'cursor-default'} ${
                     index % 2 === 0 
                       ? theme === 'dark' ? 'bg-gray-900' : 'bg-muted/10'
                       : theme === 'dark' ? 'bg-gray-800' : 'bg-white'
                   } ${selectedRows.has(item[idKey]) ? 'bg-primary/5' : ''}`}
-                  onClick={() => onRowClick?.(item)}
+                  onClick={onRowClick ? () => onRowClick(item) : undefined}
                 >
                   {onRowSelect && (
                     <TableCell onClick={(e) => e.stopPropagation()}>

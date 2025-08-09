@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Building2, Plus, Edit, Trash2, ToggleRight, Mail, Phone, Calendar } from 'lucide-react';
+import { Building2, Plus, Edit, Trash2, ToggleRight, Mail, Phone, Calendar, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -196,7 +196,11 @@ export const Suppliers = () => {
     {
       key: 'status',
       header: 'Status',
-      render: (supplier) => getStatusBadge(supplier.status)
+      render: (supplier) => (
+        <div className="flex justify-center">
+          {getStatusBadge(supplier.status)}
+        </div>
+      )
     },
     {
       key: 'created',
@@ -214,6 +218,14 @@ export const Suppliers = () => {
       width: 'text-right',
       render: (supplier) => (
         <div className="flex items-center justify-end gap-2">
+          <span onClick={(e) => e.stopPropagation()}>
+            <ActionButton
+              icon={Eye}
+              tooltip="View Details"
+              color="purple"
+              onClick={() => handleViewDetails(supplier)}
+            />
+          </span>
           <span onClick={(e) => e.stopPropagation()}>
             <ActionButton
               icon={ToggleRight}
@@ -285,7 +297,6 @@ export const Suppliers = () => {
             onRowSelect={setSelectedSupplierIds}
             emptyMessage="No suppliers available."
             idKey="id"
-            onRowClick={(supplier) => handleViewDetails(supplier)}
           />
         </CardContent>
       </Card>

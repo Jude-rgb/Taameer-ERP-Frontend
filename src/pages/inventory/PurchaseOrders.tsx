@@ -4,13 +4,11 @@ import {
   Plus, 
   Edit, 
   Trash2, 
-  Package, 
-  FileText, 
   Calendar, 
-  Building2,
   Download,
   PackageCheck,
-  Loader2
+  Loader2,
+  Eye
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -251,7 +249,7 @@ export const PurchaseOrders = () => {
     };
 
     const statusConfig = statusMap[type][status.toLowerCase()] || { label: status, className: 'bg-gray-500 text-white' };
-    return <Badge className={statusConfig.className}>{statusConfig.label}</Badge>;
+    return <Badge className={`justify-center ${statusConfig.className}`}>{statusConfig.label}</Badge>;
   };
 
   const formatCurrency = (amount: string, currencyType: string = 'OMR', decimalPlaces: number = 3) => {
@@ -416,6 +414,15 @@ export const PurchaseOrders = () => {
 
         return (
           <div className="flex items-center justify-end gap-2">
+            <ActionButton
+              icon={Eye}
+              tooltip="View Details"
+              color="purple"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRowClick(order);
+              }}
+            />
             {canEdit && (
               <ActionButton
                 icon={Edit}
@@ -518,7 +525,6 @@ export const PurchaseOrders = () => {
             onRowSelect={setSelectedPurchaseOrderIds}
             emptyMessage="No purchase orders available."
             idKey="id"
-            onRowClick={(order) => handleRowClick(order)}
             pageSizeOptions={[10, 20, 50, 100]}
             defaultPageSize={10}
           />

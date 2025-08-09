@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Package, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react';
+import { Package, AlertTriangle, TrendingUp, TrendingDown, Eye } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -11,6 +11,7 @@ import { DataTable, Column } from '@/components/ui/data-table';
 import { GrnDetailsModal } from '@/components/modals/GrnDetailsModal';
 import { GrnCreateModal } from '@/components/modals/GrnCreateModal';
 import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/components/ui/action-button';
 
 export const StockManagement = () => {
   const { products, fetchProducts, isLoading } = useProductStore();
@@ -209,9 +210,9 @@ export const StockManagement = () => {
                     <p className="text-sm text-muted-foreground">{mv.code} • {new Date(mv.date).toLocaleString()}</p>
                   </div>
                   <div className="text-right">
-                    <div className="flex items-center gap-2">
-                      <Badge className="bg-success text-white">+{mv.qty}</Badge>
-                      <Badge variant="outline" className="hidden sm:inline-flex">{mv.before} → {mv.after}</Badge>
+                   <div className="flex items-center gap-2">
+                      <Badge className="justify-center bg-success text-white">+{mv.qty}</Badge>
+                      <Badge variant="outline" className="justify-center hidden sm:inline-flex">{mv.before} → {mv.after}</Badge>
                     </div>
                   </div>
                 </div>
@@ -243,10 +244,27 @@ export const StockManagement = () => {
             columns={[
               { key: 'grn_number', header: 'GRN Number', render: (row: any) => <span className="font-medium">{row.grn_number}</span> },
               { key: 'created_at', header: 'Date', render: (row: any) => new Date(row.created_at).toLocaleString() },
+              {
+                key: 'actions',
+                header: 'Actions',
+                width: 'text-right',
+                render: (row: any) => (
+                  <div className="flex items-center justify-end gap-2">
+                    <ActionButton
+                      icon={Eye}
+                      tooltip="View Details"
+                      color="purple"
+                      onClick={(e) => {
+                        e?.stopPropagation?.();
+                        setSelectedGrn(row.raw);
+                      }}
+                    />
+                  </div>
+                )
+              }
             ] as Column<any>[]}
             searchKey="searchableText"
             searchPlaceholder="Search by GRN number, product code, or product name..."
-            onRowClick={(row: any) => setSelectedGrn(row.raw)}
             emptyMessage="No GRNs available."
             idKey="id"
             pageSizeOptions={[10, 20, 50, 100]}

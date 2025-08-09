@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Filter, Edit, Trash2, Package, Download, Calendar } from 'lucide-react';
+import { Plus, Filter, Edit, Trash2, Package, Download, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -275,7 +275,7 @@ export const Products = () => {
        render: (product) => {
          const status = getStockStatus(product);
          return (
-                       <Badge className={`${status.className} text-[10px] px-1.5 py-0.5 rounded-full whitespace-nowrap min-h-[20px] flex items-center justify-center`}>
+                       <Badge className={`justify-center ${status.className} text-[10px] px-1.5 py-0.5 rounded-full whitespace-nowrap min-h-[20px] flex items-center justify-center`}>
               {status.label}
             </Badge>
          );
@@ -296,6 +296,15 @@ export const Products = () => {
       width: 'text-right',
       render: (product) => (
         <div className="flex items-center justify-end gap-2">
+          <ActionButton
+            icon={Eye}
+            tooltip="View Details"
+            color="purple"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleRowClick(product);
+            }}
+          />
           <ActionButton
             icon={Edit}
             tooltip="Edit Product"
@@ -407,7 +416,6 @@ export const Products = () => {
             searchKey="product_name"
             searchPlaceholder="Search products by brand, code, or name..."
             onRowSelect={setSelectedProductIds}
-            onRowClick={handleRowClick}
             emptyMessage="No products available."
             idKey="id"
             pageSizeOptions={[10, 20, 50, 100]}

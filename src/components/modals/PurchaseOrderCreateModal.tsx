@@ -119,13 +119,17 @@ export const PurchaseOrderCreateModal = ({
 }: PurchaseOrderCreateModalProps) => {
   const { toast } = useToast();
   
-  const [formData, setFormData] = useState<FormData>({
+  const getInitialFormData = (): FormData => ({
     supplier: null,
-    purchaseDate: new Date().toISOString().split('T')[0], // Today's date
+    purchaseDate: new Date().toISOString().split('T')[0],
     quotation_ref: '',
     currency: 'OMR',
     products: [],
     note: ''
+  });
+
+  const [formData, setFormData] = useState<FormData>({
+    ...getInitialFormData()
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
@@ -149,27 +153,31 @@ export const PurchaseOrderCreateModal = ({
   const [selectedProductIndex, setSelectedProductIndex] = useState(-1);
   const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
 
+  const resetFormToInitial = () => {
+    setFormData(getInitialFormData());
+    setErrors({});
+    setProductEntry({ name: '', code: '', quantity: '', price: '' });
+    setShowProductSuggestions(false);
+    setFilteredProducts([]);
+    setSelectedProductIndex(-1);
+    setIsProductDropdownOpen(false);
+  };
+
   // Load suppliers and products on modal open
   useEffect(() => {
     if (isOpen) {
+      // Always start fresh when opening
+      resetFormToInitial();
+
       loadSuppliers();
       loadProducts();
       
       if (mode === 'edit' && purchaseOrder) {
         loadPurchaseOrderDetails();
       } else {
-        // Reset form for create mode
-        setFormData({
-          supplier: null,
-          purchaseDate: new Date().toISOString().split('T')[0],
-          quotation_ref: '',
-          currency: 'OMR',
-          products: [],
-          note: ''
-        });
+        // Ensure clean state for create mode
+        setFormData(getInitialFormData());
       }
-      setErrors({});
-      setProductEntry({ name: '', code: '', quantity: '', price: '' });
     }
   }, [isOpen, mode, purchaseOrder]);
 
@@ -499,7 +507,7 @@ export const PurchaseOrderCreateModal = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) { resetFormToInitial(); onClose(); } }}>
       <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto">
         <DialogHeader className="border-b pb-4">
           <DialogTitle className="flex items-center gap-2 text-2xl">
