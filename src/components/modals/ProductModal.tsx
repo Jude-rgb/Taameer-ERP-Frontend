@@ -214,48 +214,12 @@ export const ProductModal = ({ isOpen, onClose, product }: ProductModalProps) =>
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
-
-    try {
-      const payload = {
-        product_code: formData.product_code!,
-        product_brand: formData.product_brand!,
-        product_name: formData.product_name!,
-        description: formData.description || '',
-        product_weight: formData.product_weight!,
-        product_unit: formData.product_unit!,
-        unit_price_shop: Number(formData.unit_price_shop),
-        unit_price_customer: Number(formData.unit_price_customer),
-        cost_price: formData.cost_price ? Number(formData.cost_price) : null,
-      };
-
-      if (product) {
-        await updateProduct(payload);
-        toast({
-          title: "Success",
-          description: "Product updated successfully",
-          variant: "success",
-        });
-      } else {
-        await addProduct(payload);
-        toast({
-          title: "Success",
-          description: "Product added successfully",
-          variant: "success",
-        });
-      }
-      
-      onClose();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to save product",
-        variant: "destructive",
-      });
-    }
+    // Disable add/update for now; show info toast like other screens
+    toast({
+      title: "Info",
+      description: "Product add/update will be available when API is fully implemented.",
+      variant: "info",
+    });
   };
 
   const handleChange = (field: keyof Product, value: any) => {
@@ -453,11 +417,18 @@ export const ProductModal = ({ isOpen, onClose, product }: ProductModalProps) =>
                     accept="image/*"
                     onChange={handleFileSelect}
                     className="hidden"
+                    disabled
                   />
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => document.getElementById('product_image')?.click()}
+                    onClick={() =>
+                      toast({
+                        title: 'Info',
+                        description: 'Product image upload will be available when API is fully implemented.',
+                        variant: 'info',
+                      })
+                    }
                   >
                     <Upload className="w-4 h-4 mr-2" />
                     Upload Image

@@ -60,25 +60,25 @@ export const NotificationDropdown = () => {
             )}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-80 p-0" align="end">
-          <div className="flex items-center justify-between p-4 border-b">
+        <DropdownMenuContent className="w-[22rem] p-0" align="end">
+          <div className="flex items-center justify-between gap-2 p-4 border-b">
             <h3 className="font-semibold">Notifications</h3>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 onClick={() => setNotificationsModalOpen(true)}
-                className="text-xs"
+                className="text-xs h-8 whitespace-nowrap"
               >
                 <Eye className="w-3 h-3 mr-1" />
                 View All
               </Button>
               {unreadCount > 0 && (
                 <Button
-                  variant="ghost"
+                  variant="secondary"
                   size="sm"
                   onClick={markAllAsRead}
-                  className="text-xs"
+                  className="text-xs h-8 whitespace-nowrap"
                 >
                   Mark all read
                 </Button>
@@ -86,7 +86,7 @@ export const NotificationDropdown = () => {
             </div>
           </div>
         
-        <ScrollArea className="h-[400px]">
+        <ScrollArea className="h-[420px]">
           {notifications.length === 0 ? (
             <div className="p-4 text-center text-muted-foreground">
               No notifications

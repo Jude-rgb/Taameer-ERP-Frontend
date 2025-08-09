@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DataTable, Column } from '@/components/ui/data-table';
 import { ActionButton } from '@/components/ui/action-button';
 import { DeleteConfirmModal } from '@/components/modals/DeleteConfirmModal';
+import { useToast } from '@/hooks/use-toast';
 
 interface Customer {
   id: string;
@@ -22,68 +23,13 @@ interface Customer {
   createdAt: string;
 }
 
-// Sample customer data
+// Sample customer data (lorem ipsum placeholders)
 const sampleCustomers: Customer[] = [
-  {
-    id: '1',
-    name: 'Ahmed Al-Mansouri',
-    email: 'ahmed@example.com',
-    phone: '+968 9123 4567',
-    company: 'Al-Mansouri Trading',
-    status: 'active',
-    totalOrders: 15,
-    totalSpent: 2500,
-    location: 'Muscat, Oman',
-    createdAt: '2024-01-15'
-  },
-  {
-    id: '2',
-    name: 'Fatima Al-Zadjali',
-    email: 'fatima@example.com',
-    phone: '+968 9234 5678',
-    company: 'Zadjali Enterprises',
-    status: 'active',
-    totalOrders: 8,
-    totalSpent: 1800,
-    location: 'Salalah, Oman',
-    createdAt: '2024-02-20'
-  },
-  {
-    id: '3',
-    name: 'Omar Al-Harthy',
-    email: 'omar@example.com',
-    phone: '+968 9345 6789',
-    company: 'Harthy Group',
-    status: 'inactive',
-    totalOrders: 3,
-    totalSpent: 450,
-    location: 'Sohar, Oman',
-    createdAt: '2024-03-10'
-  },
-  {
-    id: '4',
-    name: 'Aisha Al-Balushi',
-    email: 'aisha@example.com',
-    phone: '+968 9456 7890',
-    company: 'Balushi Solutions',
-    status: 'active',
-    totalOrders: 22,
-    totalSpent: 3200,
-    location: 'Nizwa, Oman',
-    createdAt: '2024-01-05'
-  },
-  {
-    id: '5',
-    name: 'Khalid Al-Rashidi',
-    email: 'khalid@example.com',
-    phone: '+968 9567 8901',
-    company: 'Rashidi Industries',
-    status: 'active',
-    totalOrders: 12,
-    totalSpent: 2100,
-    location: 'Sur, Oman',
-    createdAt: '2024-02-28'
-  }
+  { id: '1', name: 'Lorem Ipsum', email: 'lorem1@example.com', phone: '+968 9000 0001', company: 'Lorem Co.', status: 'active', totalOrders: 10, totalSpent: 1500, location: 'Muscat, Oman', createdAt: '2024-01-15' },
+  { id: '2', name: 'Dolor Sit', email: 'lorem2@example.com', phone: '+968 9000 0002', company: 'Dolor Ltd.', status: 'active', totalOrders: 8, totalSpent: 980, location: 'Salalah, Oman', createdAt: '2024-02-20' },
+  { id: '3', name: 'Amet Consectetur', email: 'lorem3@example.com', phone: '+968 9000 0003', company: 'Amet Group', status: 'inactive', totalOrders: 3, totalSpent: 450, location: 'Sohar, Oman', createdAt: '2024-03-10' },
+  { id: '4', name: 'Adipiscing Elit', email: 'lorem4@example.com', phone: '+968 9000 0004', company: 'Adipiscing Solutions', status: 'active', totalOrders: 22, totalSpent: 3200, location: 'Nizwa, Oman', createdAt: '2024-01-05' },
+  { id: '5', name: 'Sed Do', email: 'lorem5@example.com', phone: '+968 9000 0005', company: 'Sed Industries', status: 'active', totalOrders: 12, totalSpent: 2100, location: 'Sur, Oman', createdAt: '2024-02-28' }
 ];
 
 export const Customers = () => {
@@ -91,24 +37,27 @@ export const Customers = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedCustomerIds, setSelectedCustomerIds] = useState<Set<number | string>>(new Set());
+  const { toast } = useToast();
 
   const handleEditCustomer = (customer: Customer) => {
     setSelectedCustomer(customer);
-    // TODO: Open edit modal
+    toast({
+      title: 'Info',
+      description: 'This feature will be available when API is fully implemented.',
+      variant: 'info',
+    });
   };
 
   const handleDeleteCustomer = (customer: Customer) => {
     setSelectedCustomer(customer);
-    setIsDeleteModalOpen(true);
+    toast({
+      title: 'Info',
+      description: 'This feature will be available when API is fully implemented.',
+      variant: 'info',
+    });
   };
 
-  const confirmDelete = () => {
-    if (selectedCustomer) {
-      setCustomers(customers.filter(c => c.id !== selectedCustomer.id));
-      setSelectedCustomer(null);
-      setIsDeleteModalOpen(false);
-    }
-  };
+  const confirmDelete = () => {};
 
   const getStatusBadge = (status: string) => {
     return status === 'active' ? (
@@ -229,9 +178,18 @@ export const Customers = () => {
       >
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Customers</h1>
-          <p className="text-muted-foreground">Manage your customer database</p>
+          <p className="text-muted-foreground">Manage your customer database (This feature is coming soon)</p>
         </div>
-        <Button className="bg-gradient-primary hover:scale-105 transition-all duration-200">
+        <Button
+          className="bg-gradient-primary hover:scale-105 transition-all duration-200"
+          onClick={() =>
+            toast({
+              title: 'Info',
+              description: 'This feature will be available when API is fully implemented.',
+              variant: 'info',
+            })
+          }
+        >
           <Plus className="mr-2 h-4 w-4" />
           Add Customer
         </Button>
@@ -260,13 +218,7 @@ export const Customers = () => {
         </CardContent>
       </Card>
 
-      <DeleteConfirmModal
-        isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        onConfirm={confirmDelete}
-        title="Delete Customer"
-        description={`Are you sure you want to delete ${selectedCustomer?.name}? This action cannot be undone.`}
-      />
+      {/* Delete modal disabled until feature is implemented */}
     </div>
   );
 };

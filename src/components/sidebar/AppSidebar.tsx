@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSystemStore } from '@/store/useSystemStore';
 import { cn } from '@/lib/utils';
+import { useThemeStore } from '@/store/useThemeStore';
 const menuItems = [{
   title: 'Dashboard',
   url: '/',
@@ -64,6 +65,7 @@ const menuItems = [{
 export function AppSidebar() {
   const { state, open, setOpen } = useSidebar();
   const { settings } = useSystemStore();
+  const { isRTL } = useThemeStore();
   const location = useLocation();
   const currentPath = location.pathname;
   const [openGroups, setOpenGroups] = useState<string[]>(['Inventory', 'Sales']);
@@ -101,6 +103,7 @@ export function AppSidebar() {
   return (
     <div className="relative">
       <Sidebar 
+        side={isRTL ? 'right' : 'left'}
         className={cn(
           "border-r bg-card shadow-sm transition-all duration-300 ease-in-out",
           !open ? "w-16" : "w-64",

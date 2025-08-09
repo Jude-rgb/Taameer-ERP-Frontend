@@ -355,22 +355,22 @@ export const UserModal = ({ isOpen, onClose, user, mode }: UserModalProps) => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 opacity-70 cursor-not-allowed">
                     {defaultModules.map((module) => (
                       <div key={module.id} className="flex items-center space-x-2">
                         <Checkbox
                           id={module.id}
                           checked={formData.permissions.includes(module.id)}
-                          onCheckedChange={(checked) => 
-                            handlePermissionChange(module.id, checked as boolean)
-                          }
+                          onCheckedChange={() => { /* disabled until API available */ }}
+                          disabled
                         />
-                        <Label htmlFor={module.id} className="text-sm font-medium">
+                        <Label htmlFor={module.id} className="text-sm font-medium select-none">
                           {module.label}
                         </Label>
                       </div>
                     ))}
                   </div>
+                  <p className="text-xs text-muted-foreground mt-2">Module permissions will be configurable when API is implemented.</p>
                 </CardContent>
               </Card>
             </TabsContent>

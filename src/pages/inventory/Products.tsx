@@ -107,8 +107,12 @@ export const Products = () => {
   };
 
   const handleDeleteProduct = (product: Product) => {
-    setProductToDelete(product);
-    setIsDeleteModalOpen(true);
+    // Show info toast since delete API is not available yet
+    toast({
+      title: "Info",
+      description: "Product delete functionality will be available when API is fully implemented.",
+      variant: "info",
+    });
   };
 
   const handleRowClick = (product: Product) => {
@@ -124,29 +128,17 @@ export const Products = () => {
 
   const handleDetailsDelete = (product: Product) => {
     setIsDetailsModalOpen(false);
-    setProductToDelete(product);
-    setIsDeleteModalOpen(true);
+    toast({
+      title: "Info",
+      description: "Product delete functionality will be available when API is fully implemented.",
+      variant: "info",
+    });
   };
 
   const confirmDelete = async () => {
-    if (productToDelete) {
-      try {
-        await deleteProduct(productToDelete.id);
-        toast({
-          title: "Success",
-          description: "Product deleted successfully",
-          variant: "success",
-        });
-        setProductToDelete(null);
-        setIsDeleteModalOpen(false);
-      } catch (error: any) {
-        toast({
-          title: "Error",
-          description: error.message || "Failed to delete product",
-          variant: "destructive",
-        });
-      }
-    }
+    // Disabled until API available
+    setIsDeleteModalOpen(false);
+    setProductToDelete(null);
   };
 
   const getStockStatus = (product: Product) => {
@@ -441,13 +433,7 @@ export const Products = () => {
         product={selectedProduct}
       />
 
-             <DeleteConfirmModal
-         isOpen={isDeleteModalOpen}
-         onClose={() => setIsDeleteModalOpen(false)}
-         onConfirm={confirmDelete}
-         title="Delete Product"
-         description={`Are you sure you want to delete "${productToDelete?.product_name}"? This action cannot be undone.`}
-       />
+       {/* Delete disabled until API is available */}
 
        <ProductDetailsModal
          isOpen={isDetailsModalOpen}

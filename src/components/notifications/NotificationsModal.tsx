@@ -69,17 +69,17 @@ export const NotificationsModal = ({ open, onOpenChange }: NotificationsModalPro
             </div>
             {notifications.some(n => !n.read) && (
               <Button
-                variant="outline"
+                variant="secondary"
                 size="sm"
                 onClick={markAllAsRead}
-                className="text-xs"
+                className="text-xs h-8"
               >
                 Mark all read
               </Button>
             )}
           </div>
           <DialogDescription>
-            View and manage all your notifications
+            View and manage all your notifications. (Future updates coming soon)
           </DialogDescription>
         </DialogHeader>
         

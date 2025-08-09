@@ -8,8 +8,11 @@ import { SalesChart } from '@/components/charts/SalesChart';
 import { ProductChart } from '@/components/charts/ProductChart';
 import { InvoiceStatusChart } from '@/components/charts/InvoiceStatusChart';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Ban } from 'lucide-react';
 import { RecentInvoices } from '@/components/dashboard/RecentInvoices';
 import { dummyProducts } from '@/data/dummyData';
+import { useProductStore } from '@/store/useProductStore';
 import { formatOMRCurrency } from '@/utils/formatters';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useQuotationStore } from '@/store/useQuotationStore';
@@ -42,6 +45,7 @@ const item = {
 
 export const Dashboard = () => {
   const { user } = useAuthStore();
+  const { products, fetchProducts, isLoading: productsLoading } = useProductStore();
   const { toast } = useToast();
   const { theme } = useThemeStore();
   const [showMyData, setShowMyData] = useState(false);
@@ -85,7 +89,12 @@ export const Dashboard = () => {
   const totalSales = getTotalSales(currentUserId);
   const totalInvoices = invoices.length;
   const outstandingPayments = getOutstandingPayments(currentUserId);
-  const lowStockItems = dummyProducts.filter(product => product.stock <= product.minStock).length;
+  // Out of stock items should mirror Stock Management's out-of-stock logic
+  // Use live API products if available; fallback to dummy
+  const outOfStockCount = (products && products.length > 0
+    ? products
+    : dummyProducts
+  ).filter((p: any) => Number(p.warehouse_stock ?? p.stock) <= 0).length;
   
   // Get real data for charts
   const salesTrends = getSalesTrends(currentUserId, 'monthly');
@@ -139,9 +148,9 @@ export const Dashboard = () => {
       subtitleColor: 'text-white/75'
     },
     {
-      title: 'Low Stock Items',
-      value: lowStockItems.toString(),
-      change: 'Needs attention',
+      title: 'Out of Stock Items',
+      value: outOfStockCount.toString(),
+      change: productsLoading ? 'Loading...' : 'Needs attention',
       trend: 'warning',
       icon: Package,
       // Dark mode: pink-600 (#db2777), Light mode: pink-500
@@ -175,6 +184,9 @@ export const Dashboard = () => {
         
         // Fetch invoices
         await fetchInvoices();
+
+        // Fetch products for out of stock KPI
+        await fetchProducts();
       } catch (error) {
         toast({
           title: "Error",
@@ -335,17 +347,34 @@ export const Dashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, duration: 0.5 }}
           >
-            <Card className="border-0 bg-card">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold">Recent Activity</CardTitle>
-                <CardDescription>
-                  Latest transactions and updates
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <RecentActivity />
-              </CardContent>
-            </Card>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="relative cursor-not-allowed">
+                    <Card className="border-0 bg-card opacity-60">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                          <Ban className="w-4 h-4 text-muted-foreground" />
+                          Recent Activity (Disabled)
+                        </CardTitle>
+                        <CardDescription>
+                          Latest transactions and updates (coming soon)
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {/* Keep dummy content visually but disabled */}
+                        <div className="pointer-events-none select-none">
+                          <RecentActivity />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  This section is disabled. Future updates coming soon.
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </motion.div>
         </div>
 

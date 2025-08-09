@@ -26,26 +26,38 @@ export const SystemSettings = () => {
     { id: 'sales/quotations', label: 'Quotations' },
     { id: 'sales/invoices', label: 'Invoices' },
     { id: 'sales/delivery-notes', label: 'Delivery Notes' },
-    { id: 'customers', label: 'Customers' },
+    { id: 'customers/customers', label: 'Customers' },
+    { id: 'customers/suppliers', label: 'Suppliers' },
     { id: 'reports', label: 'Reports' },
     { id: 'users', label: 'User Management' },
     { id: 'settings', label: 'System Settings' }
   ];
 
   const [tempSettings, setTempSettings] = useState({
-    ...settings,
-    enabledModules: settings.enabledModules || defaultModules.map(m => m.id)
+    companyName: '',
+    companySlogan: '',
+    companyAddress: '',
+    companyEmail: '',
+    crNumber: '',
+    vatRegNumber: '',
+    vatPercentage: undefined as any,
+    primaryColor: '',
+    secondaryColor: '',
+    fontFamily: '',
+    themeMode: '',
+    logoPlacement: '',
+    language: '',
+    currency: '',
+    dateFormat: '',
+    timeFormat: '',
+    enabledModules: [] as string[],
   });
 
   const handleSave = () => {
-    updateSettings(tempSettings);
-    if (tempSettings.language !== settings.language) {
-      setRTL(tempSettings.language === 'ar');
-    }
     toast({
-      title: "Settings Updated",
-      description: "System settings have been saved successfully.",
-      variant: "success"
+      title: "Info",
+      description: "System settings save will be available when API is fully implemented.",
+      variant: "info",
     });
   };
 
@@ -66,7 +78,7 @@ export const SystemSettings = () => {
         transition={{ duration: 0.5 }}
       >
         <h1 className="text-3xl font-bold tracking-tight">System Settings</h1>
-        <p className="text-muted-foreground">Configure system preferences and appearance</p>
+        <p className="text-muted-foreground">Configure system preferences and appearance (This feature is coming soon)</p>
       </motion.div>
       
       <Tabs defaultValue="company" className="space-y-6">
@@ -93,8 +105,9 @@ export const SystemSettings = () => {
                   <Input
                     id="company-name"
                     value={tempSettings.companyName}
-                    onChange={(e) => setTempSettings(prev => ({ ...prev, companyName: e.target.value }))}
-                    placeholder="Enter company name"
+                    onChange={() => {}}
+                    placeholder=""
+                    disabled
                   />
                 </div>
                 <div className="space-y-2">
@@ -102,19 +115,21 @@ export const SystemSettings = () => {
                   <Input
                     id="company-slogan"
                     value={tempSettings.companySlogan}
-                    onChange={(e) => setTempSettings(prev => ({ ...prev, companySlogan: e.target.value }))}
-                    placeholder="Enter company slogan"
+                    onChange={() => {}}
+                    placeholder=""
+                    disabled
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="company-address">Company Address</Label>
-                <Textarea
+                  <Textarea
                   id="company-address"
-                  value={tempSettings.companyAddress}
-                  onChange={(e) => setTempSettings(prev => ({ ...prev, companyAddress: e.target.value }))}
-                  placeholder="Enter complete company address"
+                    value={tempSettings.companyAddress}
+                    onChange={() => {}}
+                    placeholder=""
+                    disabled
                   rows={3}
                 />
               </div>
@@ -126,8 +141,9 @@ export const SystemSettings = () => {
                     id="company-email"
                     type="email"
                     value={tempSettings.companyEmail}
-                    onChange={(e) => setTempSettings(prev => ({ ...prev, companyEmail: e.target.value }))}
-                    placeholder="company@example.com"
+                    onChange={() => {}}
+                    placeholder=""
+                    disabled
                   />
                 </div>
                 <div className="space-y-2">
@@ -135,8 +151,9 @@ export const SystemSettings = () => {
                   <Input
                     id="cr-number"
                     value={tempSettings.crNumber}
-                    onChange={(e) => setTempSettings(prev => ({ ...prev, crNumber: e.target.value }))}
-                    placeholder="Commercial Registration Number"
+                    onChange={() => {}}
+                    placeholder=""
+                    disabled
                   />
                 </div>
               </div>
@@ -147,8 +164,9 @@ export const SystemSettings = () => {
                   <Input
                     id="vat-reg-number"
                     value={tempSettings.vatRegNumber}
-                    onChange={(e) => setTempSettings(prev => ({ ...prev, vatRegNumber: e.target.value }))}
-                    placeholder="VAT Registration Number"
+                    onChange={() => {}}
+                    placeholder=""
+                    disabled
                   />
                 </div>
                 <div className="space-y-2">
@@ -160,8 +178,9 @@ export const SystemSettings = () => {
                     max="100"
                     step="0.1"
                     value={tempSettings.vatPercentage}
-                    onChange={(e) => setTempSettings(prev => ({ ...prev, vatPercentage: Number(e.target.value) }))}
-                    placeholder="5"
+                    onChange={() => {}}
+                    placeholder=""
+                    disabled
                   />
                 </div>
               </div>
@@ -198,14 +217,16 @@ export const SystemSettings = () => {
                       id="primary-color"
                       type="color"
                       value={tempSettings.primaryColor}
-                      onChange={(e) => setTempSettings(prev => ({ ...prev, primaryColor: e.target.value }))}
+                      onChange={() => {}}
                       className="w-20 h-10 p-1 border rounded"
+                      disabled
                     />
                     <Input
                       value={tempSettings.primaryColor}
-                      onChange={(e) => setTempSettings(prev => ({ ...prev, primaryColor: e.target.value }))}
-                      placeholder="#2563eb"
+                      onChange={() => {}}
+                      placeholder=""
                       className="flex-1"
+                      disabled
                     />
                   </div>
                 </div>
@@ -216,14 +237,16 @@ export const SystemSettings = () => {
                       id="secondary-color"
                       type="color"
                       value={tempSettings.secondaryColor}
-                      onChange={(e) => setTempSettings(prev => ({ ...prev, secondaryColor: e.target.value }))}
+                      onChange={() => {}}
                       className="w-20 h-10 p-1 border rounded"
+                      disabled
                     />
                     <Input
                       value={tempSettings.secondaryColor}
-                      onChange={(e) => setTempSettings(prev => ({ ...prev, secondaryColor: e.target.value }))}
-                      placeholder="#64748b"
+                      onChange={() => {}}
+                      placeholder=""
                       className="flex-1"
+                      disabled
                     />
                   </div>
                 </div>
@@ -232,10 +255,7 @@ export const SystemSettings = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="font-family">Font Family</Label>
-                  <Select
-                    value={tempSettings.fontFamily}
-                    onValueChange={(value) => setTempSettings(prev => ({ ...prev, fontFamily: value }))}
-                  >
+                  <Select value={tempSettings.fontFamily} onValueChange={() => {}} disabled>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -250,10 +270,7 @@ export const SystemSettings = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="theme-mode">Theme Mode</Label>
-                  <Select
-                    value={tempSettings.themeMode}
-                    onValueChange={(value: any) => setTempSettings(prev => ({ ...prev, themeMode: value }))}
-                  >
+                  <Select value={tempSettings.themeMode} onValueChange={() => {}} disabled>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -283,10 +300,7 @@ export const SystemSettings = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="logo-placement">Logo Placement</Label>
-                <Select
-                  value={tempSettings.logoPlacement}
-                  onValueChange={(value: any) => setTempSettings(prev => ({ ...prev, logoPlacement: value }))}
-                >
+                  <Select value={tempSettings.logoPlacement} onValueChange={() => {}} disabled>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -314,10 +328,7 @@ export const SystemSettings = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="language">Language</Label>
-                  <Select
-                    value={tempSettings.language}
-                    onValueChange={(value: 'en' | 'ar') => setTempSettings(prev => ({ ...prev, language: value }))}
-                  >
+                  <Select value={tempSettings.language} onValueChange={() => {}} disabled>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -329,10 +340,7 @@ export const SystemSettings = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="currency">Currency</Label>
-                  <Select
-                    value={tempSettings.currency}
-                    onValueChange={(value) => setTempSettings(prev => ({ ...prev, currency: value }))}
-                  >
+                  <Select value={tempSettings.currency} onValueChange={() => {}} disabled>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -353,10 +361,7 @@ export const SystemSettings = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="date-format">Date Format</Label>
-                  <Select
-                    value={tempSettings.dateFormat}
-                    onValueChange={(value) => setTempSettings(prev => ({ ...prev, dateFormat: value }))}
-                  >
+                  <Select value={tempSettings.dateFormat} onValueChange={() => {}} disabled>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -370,10 +375,7 @@ export const SystemSettings = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="time-format">Time Format</Label>
-                  <Select
-                    value={tempSettings.timeFormat}
-                    onValueChange={(value: any) => setTempSettings(prev => ({ ...prev, timeFormat: value }))}
-                  >
+                  <Select value={tempSettings.timeFormat} onValueChange={() => {}} disabled>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -413,10 +415,7 @@ export const SystemSettings = () => {
                         {module.id.includes('/') ? 'Sub-module' : 'Main module'}
                       </div>
                     </div>
-                    <Switch
-                      checked={tempSettings.enabledModules?.includes(module.id) || false}
-                      onCheckedChange={(checked) => handleModuleToggle(module.id, checked)}
-                    />
+                    <Switch checked={false} onCheckedChange={() => {}} disabled />
                   </motion.div>
                 ))}
               </div>

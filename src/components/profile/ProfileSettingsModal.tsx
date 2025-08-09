@@ -51,80 +51,35 @@ export const ProfileSettingsModal = ({ open, onOpenChange }: ProfileSettingsModa
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsUpdatingProfile(true);
-    
-    try {
-      updateProfile(profileData);
-      toast({
-        title: "Profile Updated",
-        description: "Your profile has been updated successfully.",
-        variant: "success",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update profile. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUpdatingProfile(false);
-    }
+    // Inform user this feature will be available later
+    toast({
+      title: "Info",
+      description: "Profile update functionality will be available when API is fully implemented.",
+      variant: "info",
+    });
+    setIsUpdatingProfile(false);
   };
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      toast({
-        title: "Password Mismatch",
-        description: "New passwords do not match.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (passwordData.newPassword.length < 6) {
-      toast({
-        title: "Weak Password",
-        description: "Password must be at least 6 characters long.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsChangingPassword(true);
-    
-    try {
-      const success = await changePassword(passwordData.currentPassword, passwordData.newPassword);
-      if (success) {
-        toast({
-          title: "Password Changed",
-          description: "Your password has been changed successfully.",
-        });
-        setPasswordData({
-          currentPassword: '',
-          newPassword: '',
-          confirmPassword: '',
-        });
-      } else {
-        toast({
-          title: "Invalid Password",
-          description: "Current password is incorrect.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to change password. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsChangingPassword(false);
-    }
+    // Inform user this feature will be available later
+    toast({
+      title: "Info",
+      description: "Password change functionality will be available when API is fully implemented.",
+      variant: "info",
+    });
+    setIsChangingPassword(false);
   };
 
   const handleAvatarUpload = () => {
-    fileInputRef.current?.click();
+    // Inform user this feature will be available later (keep file input disabled)
+    toast({
+      title: "Info",
+      description: "Profile photo update functionality will be available when API is fully implemented.",
+      variant: "info",
+    });
+    return;
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -223,13 +178,14 @@ export const ProfileSettingsModal = ({ open, onOpenChange }: ProfileSettingsModa
                   Change Photo
                 </Button>
                 
-                {/* Hidden file input */}
+                {/* Hidden file input (disabled until API available) */}
                 <input
                   ref={fileInputRef}
                   type="file"
                   accept="image/*"
                   onChange={handleFileSelect}
                   className="hidden"
+                  disabled
                 />
               </div>
 
