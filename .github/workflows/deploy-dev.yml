@@ -28,6 +28,12 @@ jobs:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL_DEV }}
         run: npm run build
 
+      - name: Ensure .htaccess is present in dist
+        run: |
+          if [ -f "public/.htaccess" ]; then
+            cp -f public/.htaccess dist/.htaccess
+          fi
+
       - name: Deploy via FTP to Hostinger
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
@@ -37,5 +43,6 @@ jobs:
           local-dir: dist/
           server-dir: ${{ secrets.FTP_SERVER_DIR_DEV }}
           protocol: ftps
+          dangerous-clean-slate: true
           log-level: minimal
           timeout: 600000
