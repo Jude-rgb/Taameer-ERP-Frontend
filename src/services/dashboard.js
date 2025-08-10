@@ -34,6 +34,19 @@ export const fetchInvoices = async () => {
 };
 
 /**
+ * Fetch all quotations
+ * @returns {Promise<Object>} Quotations data
+ */
+export const fetchQuotations = async () => {
+  try {
+    const response = await api.get("api/taameer/quotation/all");
+    return processApiResponse(response);
+  } catch (error) {
+    throw new Error(handleApiError(error));
+  }
+};
+
+/**
  * Get single invoice details by ID
  * @param {number|string} invoiceId
  */

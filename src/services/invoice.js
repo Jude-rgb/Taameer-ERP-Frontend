@@ -33,3 +33,18 @@ export const createInvoiceRefund = async (payload) => {
     throw new Error(handleApiError(error));
   }
 };
+
+// Create invoice from quotation
+export const createInvoiceFromQuotation = async (payload) => {
+  try {
+    const response = await api.post("api/taameer/invoice/create", payload);
+    // Return raw data to allow handling of custom status shapes (e.g., { status: 'error', errors: {...} })
+    return response.data;
+  } catch (error) {
+    // If server returned a structured error, forward it
+    if (error.response?.data) {
+      return error.response.data;
+    }
+    throw new Error(handleApiError(error));
+  }
+};

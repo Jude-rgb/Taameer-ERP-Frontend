@@ -19,6 +19,7 @@ import { useQuotationStore } from '@/store/useQuotationStore';
 import { useInvoiceStore } from '@/store/useInvoiceStore';
 import { useToast } from '@/hooks/use-toast';
 import { useThemeStore } from '@/store/useThemeStore';
+import { useNavigate } from 'react-router-dom';
 
 const container = {
   hidden: {
@@ -49,6 +50,7 @@ export const Dashboard = () => {
   const { toast } = useToast();
   const { theme } = useThemeStore();
   const [showMyData, setShowMyData] = useState(false);
+  const navigate = useNavigate();
   
   // Zustand stores
   const { 
@@ -163,10 +165,10 @@ export const Dashboard = () => {
   ];
 
   const quickActions = [
-    { title: 'Create Quotation', icon: Quote, color: 'bg-gradient-primary', description: 'New quote for customers' },
-    { title: 'Add Product', icon: Package, color: 'bg-gradient-success', description: 'Expand inventory' },
-    { title: 'View Reports', icon: BarChart, color: 'bg-gradient-warning', description: 'Business analytics' },
-    { title: 'Manage Users', icon: Users, color: 'bg-gradient-teal', description: 'Team management' },
+    { title: 'Create Quotation', icon: Quote, color: 'bg-gradient-primary', description: 'New quote for customers', to: '/sales/quotations' },
+    { title: 'Add Product', icon: Package, color: 'bg-gradient-success', description: 'Expand inventory', to: '/inventory/products' },
+    { title: 'View Reports', icon: BarChart, color: 'bg-gradient-warning', description: 'Business analytics', to: '/reports' },
+    { title: 'Manage Users', icon: Users, color: 'bg-gradient-teal', description: 'Team management', to: '/users' },
   ];
 
   // Function to capitalize status
@@ -471,7 +473,18 @@ export const Dashboard = () => {
             whileHover={{ scale: 1.05, y: -5 }}
             whileTap={{ scale: 0.95 }}
           >
-            <Card className={`border-0 ${action.color} text-white cursor-pointer transition-all duration-300 hover:shadow-2xl group overflow-hidden relative hover:brightness-110`}>
+            <Card
+              className={`border-0 ${action.color} text-white cursor-pointer transition-all duration-300 hover:shadow-2xl group overflow-hidden relative hover:brightness-110`}
+              onClick={() => navigate(action.to)}
+              role="link"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  navigate(action.to);
+                }
+              }}
+            >
               <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-10 translate-x-10" />
               

@@ -162,7 +162,7 @@ export async function generateDeliveryNotePDF(
       infoY += 6;
     }
     if (data.quotation_number) {
-      doc.text(`QA#: ${data.quotation_number}`, pageWidth - margin, infoY, { align: 'right' });
+      doc.text(`QUO#: ${data.quotation_number}`, pageWidth - margin, infoY, { align: 'right' });
       infoY += 6;
     }
     if (data.invoice_number) {

@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import { NotificationDropdown } from './NotificationDropdown';
 import { ProfileSettingsModal } from '@/components/profile/ProfileSettingsModal';
 import { LogoutButton } from '@/components/auth/LogoutButton';
@@ -26,6 +26,7 @@ export const TopNavbar = () => {
   const { user, logout } = useAuthStore();
   const { theme, isRTL, toggleTheme, toggleRTL } = useThemeStore();
   const { settings } = useSystemStore();
+  const { state } = useSidebar();
 
   return (
     <>
@@ -38,6 +39,13 @@ export const TopNavbar = () => {
                 <Menu className="w-5 h-5" />
               </Button>
             </MobileNavigation>
+
+            {/* Sidebar expand button (desktop) - only when collapsed */}
+            {state === 'collapsed' && (
+              <div className="hidden md:flex">
+                <SidebarTrigger className="h-9 w-9 hover:bg-accent/50" aria-label="Expand sidebar" />
+              </div>
+            )}
 
             {/* Company Info - hidden on mobile */}
             <div className="hidden lg:block">

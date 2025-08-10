@@ -2,3 +2,4 @@ export { generatePurchaseOrderPDF, type PurchaseOrderDetails } from './generateP
 export { generateDeliveryNotePDF, type DeliveryNoteDetails } from './generateDeliveryNotePdf';
 export { generateInvoicePDF, type InvoiceDetailsPdf } from './generateInvoicePdf';
 export { generateSubInvoicePDF, type SubInvoiceDetailsPdf } from './generateSubInvoicePdf';
+export { generateQuotationPDF, type QuotationDetailsPdf } from './generateQuotationPdf';
