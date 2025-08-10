@@ -1,8 +1,13 @@
 import axios from "axios";
 
+// Resolve API base URL from Vite envs. Falls back to staging if not set.
+const apiBaseUrl =
+  import.meta?.env?.VITE_API_BASE_URL ||
+  "https://taameerv2staging.gethorcrm.com/";
+
 // Create axios instance with default configuration
 const api = axios.create({
-  baseURL: "https://taameerv2staging.gethorcrm.com/",
+  baseURL: apiBaseUrl,
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",

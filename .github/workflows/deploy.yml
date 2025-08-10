@@ -1,0 +1,72 @@
+name: Deploy to Hostinger
+
+on:
+  push:
+    branches:
+      - development
+      - main
+      - production
+
+jobs:
+  deploy:
+    if: github.repository_owner == 'pixelpro-oman'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    env:
+      NODE_VERSION: "20"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        env:
+          VITE_API_BASE_URL: ${{ startsWith(github.ref_name, 'development') && 'https://taameerv2staging.gethorcrm.com/' || 'https://taameerv2.gethorcrm.com/' }}
+        run: npm run build
+
+      - name: Archive production artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build
+          path: dist
+
+      - name: Deploy via FTP to Hostinger (Development)
+        if: github.ref_name == 'development'
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.DEV_FTP_SERVER }}
+          username: ${{ secrets.DEV_FTP_USERNAME }}
+          password: ${{ secrets.DEV_FTP_PASSWORD }}
+          protocol: ftps
+          server-dir: ${{ secrets.DEV_FTP_DIR }}
+          local-dir: dist
+          dangerous-clean-slate: true
+
+      - name: Deploy via FTP to Hostinger (Production)
+        if: github.ref_name == 'main' || github.ref_name == 'production'
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.PROD_FTP_SERVER }}
+          username: ${{ secrets.PROD_FTP_USERNAME }}
+          password: ${{ secrets.PROD_FTP_PASSWORD }}
+          protocol: ftps
+          server-dir: ${{ secrets.PROD_FTP_DIR }}
+          local-dir: dist
+          dangerous-clean-slate: true
+
+      - name: Create Release tag on production
+        if: github.ref_name == 'main' || github.ref_name == 'production'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          generate_release_notes: true
