@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import AddInvoicePaymentModal from '@/components/modals/AddInvoicePaymentModal';
 import InvoiceRefundModal from '@/components/modals/InvoiceRefundModal';
 import { formatDate, formatOMRCurrency, getInvoiceStatusColor } from '@/utils/formatters';
+import { generateInvoicePDF, generateSubInvoicePDF } from '@/components/pdf';
 import api from '@/services/config.js';
 
 interface InvoiceDetailsModalProps {
@@ -80,6 +81,20 @@ export const InvoiceDetailsModal: React.FC<InvoiceDetailsModalProps> = ({ isOpen
     window.open(`${base}/${path}`, '_blank');
   };
 
+  const handleDownloadInvoice = async () => {
+    if (!details) return;
+    try {
+      const hasPayments = Array.isArray(details.invoice_payment) && details.invoice_payment.length > 0;
+      if (hasPayments) {
+        await generateSubInvoicePDF(details);
+      } else {
+        await generateInvoicePDF(details);
+      }
+    } catch (e: any) {
+      toast({ title: 'Failed to generate PDF', description: e?.message || 'Try again later', variant: 'destructive' });
+    }
+  };
+
   // Totals breakdown to mirror legacy layout
   const subTotal = parseFloat(details?.sub_quotation_total || '0') || 0;
   const discountAmt = parseFloat(details?.discount_price || '0') || 0;
@@ -110,9 +125,15 @@ export const InvoiceDetailsModal: React.FC<InvoiceDetailsModalProps> = ({ isOpen
           </div>
         ) : (
           <div className="space-y-6">
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={handleDownloadInvoice} className="gap-2">
+                <Download className="w-4 h-4" />
+                Download Invoice
+              </Button>
+            </div>
             {/* Summary Cards */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {[{title:'Grand Total', value: formatOMRCurrency(parseFloat(details.quotation_total || '0')) , icon: CircleDollarSign, color:'text-primary', bg:'bg-primary/10'},
+              {[{title:'Grand Total', value: formatOMRCurrency(grandTotalAfterRefund) , icon: CircleDollarSign, color:'text-primary', bg:'bg-primary/10'},
                 {title:'Paid', value: formatOMRCurrency(totalPaid), icon: CreditCard, color:'text-success', bg:'bg-success/10'},
                 {title:'Balance', value: formatOMRCurrency(balance), icon: DollarSign, color:'text-warning', bg:'bg-warning/10'}].map((c, idx) => (
                 <Card key={c.title} className="border-0 bg-gradient-card">
@@ -311,6 +332,10 @@ export const InvoiceDetailsModal: React.FC<InvoiceDetailsModalProps> = ({ isOpen
                 )) : <div className="text-center py-6 text-muted-foreground">No payments yet</div>}
                 {/* Action Buttons */}
                 <div className="flex justify-end gap-2 pt-2">
+                  <Button variant="outline" onClick={handleDownloadInvoice} className="gap-2">
+                    <Download className="w-4 h-4" />
+                    Download Invoice
+                  </Button>
                   <Button onClick={() => setIsAddPaymentOpen(true)} disabled={isPaid}>
                     Make Payment
                   </Button>

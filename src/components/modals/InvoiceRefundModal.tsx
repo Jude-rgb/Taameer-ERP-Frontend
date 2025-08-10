@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+// removed unused Badge import
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { createInvoiceRefund } from '@/services/invoice.js';
@@ -29,7 +29,7 @@ export const InvoiceRefundModal: React.FC<InvoiceRefundModalProps> = ({ isOpen, 
 
   const paidTotal = useMemo(() => (invoice?.invoice_payment || []).reduce((a: number, p: any) => a + (parseFloat(p.paid_amount || '0') || 0), 0), [invoice]);
   const grandTotal = useMemo(() => parseFloat(invoice?.quotation_total || '0') || 0, [invoice]);
-  const maxRefund = useMemo(() => Math.max(paidTotal, 0), [paidTotal]);
+  // removed standalone maxRefund as it's not shown in UI; validation still enforced in submit
 
   const invoiceSubtotal = useMemo(() => parseFloat(invoice?.sub_quotation_total || '0') || 0, [invoice]);
   const invoiceDiscount = useMemo(() => parseFloat(invoice?.discount_price || '0') || 0, [invoice]);
@@ -75,7 +75,29 @@ export const InvoiceRefundModal: React.FC<InvoiceRefundModalProps> = ({ isOpen, 
   const currentGrandTotal = useMemo(() => Math.max(0, grossTotal - existingRefund), [grossTotal, existingRefund]);
   const overpayAllowance = useMemo(() => Math.max(0, paidTotal - currentGrandTotal), [paidTotal, currentGrandTotal]);
   const mustSelectItems = overpayAllowance <= 0.0005; // require items if not overpaid
-  const maxRefundCap = useMemo(() => Math.min(paidTotal, currentGrandTotal) + overpayAllowance, [paidTotal, currentGrandTotal, overpayAllowance]);
+  // NOTE: we no longer display a numeric max; validation uses computedRefund + overpayAllowance
+
+  // Cap per-item refund quantity by remaining quantity after previous refunds
+  const previouslyRefundedMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    const list = Array.isArray(invoice?.refund_products) ? invoice.refund_products : [];
+    for (const rp of list) {
+      const code: string | undefined = (rp as any).product_code || (rp as any).productCode || (rp as any).code;
+      const key = code || ((rp as any).product_name ? `name:${(rp as any).product_name}` : undefined);
+      const qty = parseFloat((rp as any).quantity || '0') || 0;
+      if (!key) continue;
+      map[key] = (map[key] || 0) + qty;
+    }
+    return map;
+  }, [invoice?.refund_products]);
+
+  const getAvailableQty = (product: any): number => {
+    const invoiceQty = parseFloat(product?.quantity || '0') || 0;
+    const code: string | undefined = product?.product_code || product?.productCode || product?.code;
+    const key = code || (product?.product_name ? `name:${product.product_name}` : undefined);
+    const alreadyRefunded = key ? (previouslyRefundedMap[key] || 0) : 0;
+    return Math.max(0, invoiceQty - alreadyRefunded);
+  };
 
   // Auto-update refund amount from computed values if user hasn't manually changed it
   React.useEffect(() => {
@@ -89,7 +111,7 @@ export const InvoiceRefundModal: React.FC<InvoiceRefundModalProps> = ({ isOpen, 
     const items = (invoice?.invoice_stock || []).map((p: any) => ({
       code: p.product_code,
       name: p.product_name,
-      qty: parseFloat(p.quantity || '0') || 0,
+      qty: getAvailableQty(p),
       unit: parseFloat(p.unit_price || '0') || 0,
     }));
     if (!items.length || paidTotal <= 0) return;
@@ -97,7 +119,6 @@ export const InvoiceRefundModal: React.FC<InvoiceRefundModalProps> = ({ isOpen, 
     const result: Array<{ product_code: string; product_name: string; quantity: number }> = [];
     for (const it of items) {
       if (remaining <= 0) break;
-      const maxQtyCost = it.qty * it.unit;
       const qty = Math.min(it.qty, Math.floor((remaining + 1e-9) / (it.unit || 1))); // integer qty
       if (qty > 0) {
         result.push({ product_code: it.code, product_name: it.name, quantity: qty });
@@ -115,6 +136,21 @@ export const InvoiceRefundModal: React.FC<InvoiceRefundModalProps> = ({ isOpen, 
       const next = [...prev];
       const newQty = Math.max(0, Math.min(max, next[idx].quantity + delta));
       next[idx] = { ...next[idx], quantity: newQty };
+      return next;
+    });
+  };
+
+  const handleQtyInput = (code: string, name: string, value: string, max: number) => {
+    const parsed = Math.floor(Number(value) || 0);
+    const clamped = Math.max(0, Math.min(max, parsed));
+    setSelected(prev => {
+      const idx = prev.findIndex(p => p.product_code === code);
+      if (idx === -1) {
+        if (clamped === 0) return prev;
+        return [...prev, { product_code: code, product_name: name, quantity: clamped }];
+      }
+      const next = [...prev];
+      next[idx] = { ...next[idx], quantity: clamped };
       return next;
     });
   };
@@ -156,6 +192,16 @@ export const InvoiceRefundModal: React.FC<InvoiceRefundModalProps> = ({ isOpen, 
       if (mustSelectItems && totalSelectedQty <= 0) {
         toast({ title: 'Items required', description: 'Select at least one product and quantity for refund.', variant: 'destructive' });
         return;
+      }
+      // Validate each selected line against available quantity (after previous refunds)
+      for (const sel of selected) {
+        const prod = (invoice?.invoice_stock || []).find((p: any) => p.product_code === sel.product_code);
+        if (!prod) continue;
+        const avail = getAvailableQty(prod);
+        if (sel.quantity > avail) {
+          toast({ title: 'Quantity too high', description: `Requested ${sel.quantity} exceeds available ${avail} for ${sel.product_name}.`, variant: 'destructive' });
+          return;
+        }
       }
       // Amount cannot exceed items-based computed refund plus any overpayment allowance
       const allowed = computedRefund + overpayAllowance;
@@ -200,7 +246,7 @@ export const InvoiceRefundModal: React.FC<InvoiceRefundModalProps> = ({ isOpen, 
 
         <div className="space-y-6">
           {/* Summary */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
               <CardContent className="p-4">
                 <div className="text-sm text-muted-foreground">Grand Total</div>
@@ -213,20 +259,15 @@ export const InvoiceRefundModal: React.FC<InvoiceRefundModalProps> = ({ isOpen, 
                 <div className="text-xl font-bold">{formatOMRCurrency(paidTotal)}</div>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-sm text-muted-foreground">Max Refund</div>
-                <div className="text-xl font-bold">{formatOMRCurrency(maxRefundCap)}</div>
-              </CardContent>
-            </Card>
+            {/* Removed Max Refund card from summary */}
           </div>
 
           {/* Refund Amount & Reason */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>Refund Amount (OMR)</Label>
-              <Input type="number" step="0.001" min="0" value={refundAmount} onChange={e => setRefundAmount(e.target.value)} />
-              <p className="text-xs text-muted-foreground mt-1">You can refund up to paid amount. If invoice total exceeds paid, you can also refund the exceeded part without selecting items.</p>
+              <Input type="number" step="0.001" min="0" value={refundAmount} onChange={e => { setRefundAmount(e.target.value); setIsAmountDirty(true); }} />
+              <p className="text-xs text-muted-foreground mt-1">You may refund up to the remaining invoice total after previous refunds, limited by the total paid. If there is overpayment, you can refund the overpaid amount without selecting items.</p>
             </div>
             <div>
               <Label>Reason</Label>
@@ -259,7 +300,7 @@ export const InvoiceRefundModal: React.FC<InvoiceRefundModalProps> = ({ isOpen, 
                 </TableHeader>
                 <TableBody>
                   {(invoice?.invoice_stock || []).map((p: any) => {
-                    const max = parseFloat(p.quantity || '0') || 0;
+                    const max = getAvailableQty(p);
                     const sel = selected.find(s => s.product_code === p.product_code);
                     const qty = sel?.quantity || 0;
                     const unit = parseFloat(p.unit_price || '0') || 0;
@@ -273,17 +314,26 @@ export const InvoiceRefundModal: React.FC<InvoiceRefundModalProps> = ({ isOpen, 
                         <TableCell className="text-right">{p.quantity}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <Button variant="outline" size="icon" onClick={() => {
-                              if (!isSelected) toggleSelect(p.product_code, p.product_name, max);
+                            <Button variant="outline" size="icon" disabled={qty <= 0 || max <= 0} onClick={() => {
+                              if (!isSelected && max > 0) toggleSelect(p.product_code, p.product_name, max);
                               handleQtyChange(p.product_code, -1, max);
                             }}>
                               <MinusCircle className="w-4 h-4" />
                             </Button>
-                            <span className="w-8 text-center">{qty}</span>
+                            <Input
+                              type="number"
+                              inputMode="numeric"
+                              className="w-16 text-right"
+                              min={0}
+                              max={max}
+                              value={qty}
+                              disabled={max <= 0}
+                              onChange={e => handleQtyInput(p.product_code, p.product_name, e.target.value, max)}
+                            />
                             <Button variant="outline" size="icon" onClick={() => {
-                              if (!isSelected) toggleSelect(p.product_code, p.product_name, max);
+                              if (!isSelected && max > 0) toggleSelect(p.product_code, p.product_name, max);
                               handleQtyChange(p.product_code, +1, max);
-                            }}>
+                            }} disabled={qty >= max || max <= 0}>
                               <PlusCircle className="w-4 h-4" />
                             </Button>
                           </div>
@@ -300,7 +350,7 @@ export const InvoiceRefundModal: React.FC<InvoiceRefundModalProps> = ({ isOpen, 
           <Separator />
 
           {/* Live Totals based on selected quantities with proportional charges */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <Card>
               <CardContent className="p-4 space-y-1">
                 <div className="flex justify-between text-sm"><span>Selected Subtotal</span><span className="font-medium">{formatOMRCurrency(selectedSubtotal)}</span></div>
@@ -312,11 +362,7 @@ export const InvoiceRefundModal: React.FC<InvoiceRefundModalProps> = ({ isOpen, 
                 <div className="flex justify-between mt-2 text-sm"><span className="font-semibold">Computed Refund</span><span className="font-bold">{formatOMRCurrency(computedRefund)}</span></div>
               </CardContent>
             </Card>
-            <div>
-              <Label>Refund Amount (OMR)</Label>
-              <Input type="number" step="0.001" min="0" value={refundAmount} onChange={e => { setRefundAmount(e.target.value); setIsAmountDirty(true); }} />
-              <p className="text-xs text-muted-foreground mt-1">You may refund up to the remaining invoice total after previous refunds, limited by the total paid. If there is overpayment, you can refund the overpaid amount without selecting items. Max now: {formatOMRCurrency(maxRefundCap)}</p>
-            </div>
+            {/* Removed duplicate refund amount field and 'Max now' text */}
           </div>
 
           <div className="flex justify-end gap-2">

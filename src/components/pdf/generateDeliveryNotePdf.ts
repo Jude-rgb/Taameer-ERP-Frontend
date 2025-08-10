@@ -151,13 +151,25 @@ export async function generateDeliveryNotePDF(
     doc.setFont('helvetica', 'bold');
     doc.text('DELIVERY NOTE', pageWidth - margin, logoY + 8, { align: 'right' });
 
-    // Info lines (Date and DN number)
+    // Info lines styled like Purchase Order header: Date then QA#, INV#, DLV#
     const displayDate = parseApiDate(data.delivery_note_created_date || data.created_at);
     doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    if (displayDate) doc.text(`DATE: ${displayDate}`, pageWidth - margin, logoY + 16, { align: 'right' });
-    doc.text(`DN#: ${data.delivery_note_number}`, pageWidth - margin, logoY + 22, { align: 'right' });
+    let infoY = logoY + 16;
+    if (displayDate) {
+      doc.text(`DATE: ${displayDate}`, pageWidth - margin, infoY, { align: 'right' });
+      infoY += 6;
+    }
+    if (data.quotation_number) {
+      doc.text(`QA#: ${data.quotation_number}`, pageWidth - margin, infoY, { align: 'right' });
+      infoY += 6;
+    }
+    if (data.invoice_number) {
+      doc.text(`INV#: ${data.invoice_number}`, pageWidth - margin, infoY, { align: 'right' });
+      infoY += 6;
+    }
+    doc.text(`DLV#: ${data.delivery_note_number}`, pageWidth - margin, infoY, { align: 'right' });
     doc.setFont('helvetica', 'normal');
   };
 
@@ -189,41 +201,49 @@ export async function generateDeliveryNotePDF(
     doc.text('00968 93655315', margin, y + 20);
     doc.text('taameer@gethor.com', margin, y + 25);
 
-    // Customer block (right)
+    // Customer block (right) styled like "SHIP TO" box in Purchase Order
     const rightX = pageWidth / 2 + 10;
+    const rightWidth = pageWidth - margin - rightX;
+    const headerBarHeight = 8; // small, noticeable header bar
+    const smallGap = 0; // join header with box body (no gap)
+    const detailsHeight = 24; // compact details box height
+
+    // Header bar
+    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.rect(rightX, y, rightWidth, headerBarHeight, 'F');
+    doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
-    doc.text(data.customer_name || 'Customer', rightX, y + 5);
-    doc.setFont('helvetica', 'normal');
+    doc.text('DELIVERY TO', rightX + 3, y + 5);
+
+    // Details box
+    const boxY = y + headerBarHeight + smallGap;
+    doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
+    doc.setLineWidth(0.5);
+    doc.rect(rightX, boxY, rightWidth, detailsHeight, 'D');
+
+    doc.setTextColor(textDark[0], textDark[1], textDark[2]);
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
-    if (data.location) doc.text(String(data.location), rightX, y + 10);
-    if (data.contact_number) doc.text(String(data.contact_number), rightX, y + 15);
+    const custName = data.customer_name || '';
+    const addr = data.location || '';
+    const phone = data.contact_number || '';
+    if (custName) doc.text(String(custName), rightX + 3, boxY + 6);
+    if (addr) doc.text(String(addr), rightX + 3, boxY + 12);
+    if (phone) doc.text(String(phone), rightX + 3, boxY + 18);
 
-    return y + 32;
+    // Return cursor just below the taller of left text and right box
+    const rightBottom = boxY + detailsHeight;
+    const leftBottom = y + 32;
+    return Math.max(leftBottom, rightBottom);
   };
 
-  const drawTopInfoTable = (startY: number) => {
-    const rows: RowInput[] = [];
-    if (data.quotation_number) rows.push(['Quotation No', data.quotation_number]);
-    if (data.invoice_number) rows.push(['Invoice No', data.invoice_number]);
-    rows.push(['Delivery Note No', data.delivery_note_number || '']);
-    const dt = parseApiDate(data.delivery_note_created_date || data.created_at) || '';
-    if (dt) rows.push(['Date', dt]);
-    autoTable(doc, {
-      showHead: 'never',
-      body: rows,
-      startY,
-      styles: { font: 'helvetica', fontSize: 10, cellPadding: 2, lineWidth: 0.2, lineColor: borderGray },
-      tableWidth: 88,
-      margin: { left: pageWidth - margin - 88, right: margin },
-    });
-  };
+  // Top-right info table removed; header now renders Date, QA#, INV#, and DLV# lines
 
-  // Draw header and top info first
+  // Draw header first (header includes right-side info lines)
   drawHeader();
-  drawTopInfoTable(12); // top-right
-  const infoEndY = (doc as any).lastAutoTable?.finalY || (headerHeight + 15);
-  let cursorY = drawCompanyAndCustomer(Math.max(45, infoEndY + 6));
+  // Add a bit more gap under the title section for visual breathing room
+  let cursorY = drawCompanyAndCustomer(50);
 
   // Items table
   const items: DeliveryNoteStock[] = data.delivery_note_stock || [];
@@ -259,26 +279,29 @@ export async function generateDeliveryNotePDF(
       drawPageNumber(pageNumber);
       drawHeader();
       drawFooter(pageNumber);
-      drawTopInfoTable(12);
     },
   });
 
   // Images & comments section removed as requested.
 
   // Finalize
-  const fileName = `${(data.delivery_note_number || 'Delivery_Note').replace(/\//g, '_')}.pdf`;
+  const sanitizedDn = (data.delivery_note_number || 'Delivery_Note')
+    .toString()
+    .replace(/\s+/g, '_')
+    .replace(/[\\/:"*?<>|]+/g, '_');
+  const fileName = `${sanitizedDn}.pdf`;
   const pageNumber = (doc as any).internal.getNumberOfPages();
   drawPageNumber(pageNumber);
   drawFooter(pageNumber);
 
-  if (opts.openInNewTab !== false && typeof window !== 'undefined') {
+  if (opts.openInNewTab === true && typeof window !== 'undefined') {
     const blob = doc.output('blob');
     const url = URL.createObjectURL(blob);
     window.open(url, '_blank');
     setTimeout(() => URL.revokeObjectURL(url), 60_000);
-  } else {
-    doc.save(fileName);
   }
+  // Always trigger a named download by default
+  doc.save(fileName);
 }
 
 

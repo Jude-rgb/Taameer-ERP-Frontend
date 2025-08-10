@@ -45,6 +45,17 @@ export const AddInvoicePaymentModal: React.FC<AddInvoicePaymentModalProps> = ({ 
   const [referenceFile, setReferenceFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+  const grandTotalAfterRefund = useMemo(() => {
+    const subTotal = parseFloat(invoice?.sub_quotation_total || '0') || 0;
+    const discountAmount = parseFloat(invoice?.discount_price || '0') || 0;
+    const vatAmount = parseFloat(invoice?.quotation_vat || '0') || 0;
+    const deliveryCharges = parseFloat(invoice?.delivery_charges || '0') || 0;
+    const refundAmount = parseFloat(invoice?.refund_amount || '0') || 0;
+    const subAfterDiscount = Math.max(0, subTotal - discountAmount);
+    const totalBeforeDelivery = subAfterDiscount + vatAmount;
+    return totalBeforeDelivery + deliveryCharges - refundAmount;
+  }, [invoice]);
+
   const paymentsCount = useMemo(() => (Array.isArray(invoice?.invoice_payment) ? invoice.invoice_payment.length : 0), [invoice?.invoice_payment?.length, invoice?.id]);
   const nextSubIndex = useMemo(() => paymentsCount + 1, [paymentsCount]);
   const paymentInvoiceNumber = useMemo(() => `${invoice?.invoice_number}_PAY_${nextSubIndex}`, [invoice?.invoice_number, nextSubIndex]);
@@ -55,11 +66,14 @@ export const AddInvoicePaymentModal: React.FC<AddInvoicePaymentModalProps> = ({ 
   }, []);
 
   const balanceAmount = useMemo(() => {
-    const total = parseFloat(invoice?.quotation_total || '0') || 0;
-    const paidSoFar = (invoice?.invoice_payment || []).reduce((a: number, p: any) => a + (parseFloat(p.paid_amount || '0') || 0), 0);
+    const total = grandTotalAfterRefund;
+    const paidSoFar = (invoice?.invoice_payment || []).reduce((accumulator: number, payment: any) => {
+      return accumulator + (parseFloat(payment.paid_amount || '0') || 0);
+    }, 0);
     const entered = parseFloat(paidAmount || '0') || 0;
-    return (total - paidSoFar - entered).toFixed(3);
-  }, [invoice, paidAmount]);
+    const remaining = total - paidSoFar - entered;
+    return remaining.toFixed(3);
+  }, [invoice, paidAmount, grandTotalAfterRefund]);
 
   const requiresAttachment = ['Cheque', 'Bank Transfer'].includes(paymentMethod);
 

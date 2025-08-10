@@ -331,6 +331,7 @@ export async function generatePurchaseOrderPDF(
   const topPad = 8; // reduced top padding inside totals box
   const rowGap = 14; // tighter vertical space between rows
   const grandBarHeight = 10; // height of red bar
+  const bottomPad = 8; // symmetric bottom padding to avoid large gap
   const labelColumnWidth = totalsWidth * 0.35; // 35% for labels
   const valueColumnWidth = totalsWidth * 0.65; // 65% for values
   const labelX = totalsX + 10; // reduced left padding for text
@@ -342,8 +343,9 @@ export async function generatePurchaseOrderPDF(
   const rowYVat = rowYSub + rowGap;
   const rowYGrand = rowYVat + rowGap;
 
-  // Compute dynamic box height (bottom padding 12)
-  const totalsBoxHeight = (rowYGrand + grandBarHeight / 2 + 12) - totalsTop;
+  // Compute dynamic box height so the space below the last row equals bottomPad
+  const rowsCount = 3; // SUB TOTAL, VAT, GRAND TOTAL
+  const totalsBoxHeight = topPad + Math.max(0, rowsCount - 1) * rowGap + bottomPad;
 
   // Draw totals background with subtle styling
   doc.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
@@ -425,8 +427,8 @@ export async function generatePurchaseOrderPDF(
 
   // Highlighted notices UNDER the two-column grid (full width)
   const notices = [
-    'THIS IS A COMPUTER-GENERATED DOCUMENT NO SIGNATURE REQUIRED',
-    '** ALL SHIPPING DOCUMENTS SHOULD BE ON THE NAME OF AL DAR CONSTRUCTION LLC.'
+    '---** ALL SHIPPING DOCUMENTS SHOULD BE ON THE NAME OF AL DAR CONSTRUCTION LLC.',
+    '--- THIS IS A COMPUTER-GENERATED DOCUMENT NO SIGNATURE REQUIRED',  
   ];
   const noticePad = 5;
   const noticeLH = 5.5;
@@ -468,15 +470,18 @@ export async function generatePurchaseOrderPDF(
   drawPageNumber(pageNumber);
   drawFooter(pageNumber);
 
-  // Present PDF: open in new tab by default; allow download if explicitly requested
-  const fileName = `${data.purchase_no.replace(/\//g, '_')}.pdf`;
-  if (opts.openInNewTab !== false && typeof window !== 'undefined') {
+  // Present PDF: default to saving with a meaningful filename; open in new tab only when explicitly requested
+  const sanitizedPo = (data.purchase_no || 'Purchase_Order')
+    .toString()
+    .replace(/\s+/g, '_')
+    .replace(/[\\/:"*?<>|]+/g, '_');
+  const fileName = `${sanitizedPo}.pdf`;
+  if (opts.openInNewTab === true && typeof window !== 'undefined') {
     const blob = doc.output('blob');
     const url = URL.createObjectURL(blob);
     window.open(url, '_blank');
-    // Revoke URL after some time to free memory
     setTimeout(() => URL.revokeObjectURL(url), 60_000);
-  } else {
-    doc.save(fileName);
   }
+  // Always trigger a named download by default
+  doc.save(fileName);
 }
