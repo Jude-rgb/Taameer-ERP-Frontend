@@ -1,8 +1,8 @@
 import axios from "axios";
 
-// Resolve API base URL from Vite envs. Falls back to staging if not set.
+// Resolve API base URL from Vite envs. Vite replaces import.meta.env at build time.
 const apiBaseUrl =
-  import.meta?.env?.VITE_API_BASE_URL ||
+  import.meta.env.VITE_API_BASE_URL ||
   "https://taameerv2staging.gethorcrm.com/";
 
 // Create axios instance with default configuration
