@@ -41,7 +41,7 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: dist/
-          server-dir: ${{ secrets.FTP_SERVER_DIR_DEV }}
+          server-dir: ${{ endsWith(secrets.FTP_SERVER_DIR_DEV, '/') && secrets.FTP_SERVER_DIR_DEV || format('{0}/', secrets.FTP_SERVER_DIR_DEV) }}
           protocol: ftps
           dangerous-clean-slate: true
           log-level: minimal
