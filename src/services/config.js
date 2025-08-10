@@ -1,13 +1,16 @@
 import axios from "axios";
 
-// Create axios instance with default configuration
+const apiBaseUrl = (typeof import !== "undefined" && import.meta && import.meta.env && import.meta.env.VITE_API_BASE_URL)
+  ? import.meta.env.VITE_API_BASE_URL
+  : "https://taameerv2staging.gethorcrm.com/";
+
 const api = axios.create({
-  baseURL: "https://taameerv2staging.gethorcrm.com/",
+  baseURL: apiBaseUrl,
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
   },
-  timeout: 10000, // 10 seconds timeout
+  timeout: 10000,
 });
 
 // Request interceptor to add auth token
