@@ -14,3 +14,22 @@ export const createInvoicePayment = async (formData) => {
     throw new Error(handleApiError(error));
   }
 };
+
+// Create invoice refund (JSON)
+export const createInvoiceRefund = async (payload) => {
+  try {
+    // Accept both FormData and plain object; prefer FormData for 'Form Data' like in screenshot
+    const isForm =
+      typeof FormData !== "undefined" && payload instanceof FormData;
+    const response = await api.post(
+      "/api/taameer/invoice/refund/create",
+      payload,
+      isForm
+        ? { headers: { "Content-Type": "multipart/form-data" } }
+        : undefined
+    );
+    return processApiResponse(response);
+  } catch (error) {
+    throw new Error(handleApiError(error));
+  }
+};
