@@ -1,8 +1,7 @@
 import axios from "axios";
 
-const apiBaseUrl = (typeof import !== "undefined" && import.meta && import.meta.env && import.meta.env.VITE_API_BASE_URL)
-  ? import.meta.env.VITE_API_BASE_URL
-  : "https://taameerv2staging.gethorcrm.com/";
+// Vite replaces import.meta.env at build time; provide a safe fallback
+const apiBaseUrl = (import.meta?.env?.VITE_API_BASE_URL) || "https://taameerv2staging.gethorcrm.com/";
 
 const api = axios.create({
   baseURL: apiBaseUrl,
