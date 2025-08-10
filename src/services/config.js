@@ -1,15 +1,13 @@
 import axios from "axios";
 
-// Vite replaces import.meta.env at build time; provide a safe fallback
-const apiBaseUrl = (import.meta?.env?.VITE_API_BASE_URL) || "https://taameerv2staging.gethorcrm.com/";
-
+// Create axios instance with default configuration
 const api = axios.create({
-  baseURL: apiBaseUrl,
+  baseURL: "https://taameerv2staging.gethorcrm.com/",
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
   },
-  timeout: 10000,
+  timeout: 10000, // 10 seconds timeout
 });
 
 // Request interceptor to add auth token
