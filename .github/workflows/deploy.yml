@@ -9,7 +9,6 @@ on:
 
 jobs:
   deploy:
-    if: github.repository_owner == 'pixelpro-oman'
     runs-on: ubuntu-latest
     permissions:
       contents: read
