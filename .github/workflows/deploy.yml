@@ -48,7 +48,7 @@ jobs:
           password: ${{ secrets.DEV_FTP_PASSWORD }}
           protocol: ftps
           server-dir: ${{ secrets.DEV_FTP_DIR }}
-          local-dir: dist
+          local-dir: ./dist/
           dangerous-clean-slate: true
 
       - name: Deploy via FTP to Hostinger (Production)
@@ -60,7 +60,7 @@ jobs:
           password: ${{ secrets.PROD_FTP_PASSWORD }}
           protocol: ftps
           server-dir: ${{ secrets.PROD_FTP_DIR }}
-          local-dir: dist
+          local-dir: ./dist/
           dangerous-clean-slate: true
 
       - name: Create Release tag on production
