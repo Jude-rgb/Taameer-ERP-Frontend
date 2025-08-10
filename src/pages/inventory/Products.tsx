@@ -14,6 +14,8 @@ import ProductFilter from '@/components/ProductFilter';
 import { useProductStore } from '@/store/useProductStore';
 import { useToast } from '@/hooks/use-toast';
 import { exportProductsToExcel } from '@/utils/exportToExcel';
+import { useAuthStore } from '@/store/useAuthStore';
+import { canPerform, normalizeRole } from '@/lib/rbac';
 
 // Product interface based on API response
 interface Product {
@@ -39,6 +41,11 @@ interface Product {
 export const Products = () => {
   const { products, fetchProducts, deleteProduct, isLoading, error, getUniqueBrands } = useProductStore();
   const { toast } = useToast();
+  const { user } = useAuthStore();
+  const role = normalizeRole(user?.role);
+  const canCreate = canPerform(role, 'product.create');
+  const canUpdate = canPerform(role, 'product.update');
+  const canDelete = canPerform(role, 'product.delete');
   
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -305,24 +312,28 @@ export const Products = () => {
               handleRowClick(product);
             }}
           />
-          <ActionButton
-            icon={Edit}
-            tooltip="Edit Product"
-            color="blue"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleEditProduct(product);
-            }}
-          />
-          <ActionButton
-            icon={Trash2}
-            tooltip="Delete Product"
-            color="red"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDeleteProduct(product);
-            }}
-          />
+          {canUpdate && (
+            <ActionButton
+              icon={Edit}
+              tooltip="Edit Product"
+              color="blue"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEditProduct(product);
+              }}
+            />
+          )}
+          {canDelete && (
+            <ActionButton
+              icon={Trash2}
+              tooltip="Delete Product"
+              color="red"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteProduct(product);
+              }}
+            />
+          )}
         </div>
       )
     }
@@ -399,13 +410,15 @@ export const Products = () => {
                 <Download className="h-4 w-4" />
                 Export to Excel
               </Button>
-              <Button 
-                onClick={handleAddProduct}
-                className="bg-primary hover:bg-primary-hover hover:scale-105 transition-all duration-200"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add Product
-              </Button>
+              {canCreate && (
+                <Button 
+                  onClick={handleAddProduct}
+                  className="bg-primary hover:bg-primary-hover hover:scale-105 transition-all duration-200"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Product
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -447,8 +460,8 @@ export const Products = () => {
          isOpen={isDetailsModalOpen}
          onClose={() => setIsDetailsModalOpen(false)}
          product={selectedProductForDetails}
-         onEdit={handleDetailsEdit}
-         onDelete={handleDetailsDelete}
+         onEdit={canUpdate ? handleDetailsEdit : undefined}
+         onDelete={canDelete ? handleDetailsDelete : undefined}
        />
     </div>
   );

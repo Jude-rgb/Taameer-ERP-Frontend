@@ -19,6 +19,8 @@ import QuotationDetailsModal from '@/components/modals/QuotationDetailsModal';
 import QuotationCreateModal from '@/components/modals/QuotationCreateModal';
 import QuotationUpdateModal from '@/components/modals/QuotationUpdateModal';
 import { generateQuotationPDF } from '@/components/pdf';
+import { useAuthStore } from '@/store/useAuthStore';
+import { canPerform, normalizeRole } from '@/lib/rbac';
 
 interface APIQuotation {
   id: number;
@@ -63,13 +65,18 @@ export const Quotations = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string | number>>(new Set());
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filters, setFilters] = useState<QuotationFilters>({ invoiceStatus: null, quotationType: null, fromDate: null, toDate: null });
-  const [showMyData, setShowMyData] = useState(false);
+  const [showMyData, setShowMyData] = useState<boolean>(false);
   const [confirmQuotation, setConfirmQuotation] = useState<APIQuotation | null>(null);
   const [isCreating, setIsCreating] = useState<boolean>(false);
   const [createError, setCreateError] = useState<any | null>(null);
   const [viewQuotation, setViewQuotation] = useState<APIQuotation | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editQuotation, setEditQuotation] = useState<APIQuotation | null>(null);
+
+  const { user } = useAuthStore();
+  const role = normalizeRole(user?.role);
+  const canCreate = canPerform(role, 'quotation.create');
+  const canUpdate = canPerform(role, 'quotation.update');
 
   const storedUser = (() => {
     try {
@@ -128,6 +135,8 @@ export const Quotations = () => {
   };
 
   const filteredQuotations = useMemo(() => quotations.filter(matchesFilters), [quotations, filters, showMyData, currentUserId]);
+
+  const isMarketingOfficer = storedUser?.role === 'Marketing_Officer';
 
   const handleExport = async () => {
     try {
@@ -223,7 +232,7 @@ export const Quotations = () => {
                 setViewQuotation(q);
               }}
             />
-            {!invCreated && (
+            {!invCreated && canUpdate && (
               <ActionButton
                 icon={Edit}
                 tooltip="Edit Quotation"
@@ -344,10 +353,12 @@ export const Quotations = () => {
                 <Download className="h-4 w-4" />
                 Export to Excel
               </Button>
-              <Button className="bg-primary hover:bg-primary-hover hover:scale-105 transition-all duration-200" onClick={() => setIsCreateOpen(true)}>
+              {canCreate && (
+                <Button className="bg-primary hover:bg-primary-hover hover:scale-105 transition-all duration-200" onClick={() => setIsCreateOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
                 Create Quotation
-              </Button>
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -452,28 +463,32 @@ export const Quotations = () => {
         quotation={viewQuotation}
       />
 
-      <QuotationCreateModal
-        isOpen={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
-        onSuccess={async () => {
-          try {
-            const r = await fetchQuotations();
-            if (r.success && Array.isArray(r.data)) setQuotations(r.data as APIQuotation[]);
-          } catch {}
-        }}
-      />
+      {canCreate && (
+        <QuotationCreateModal
+          isOpen={isCreateOpen}
+          onClose={() => setIsCreateOpen(false)}
+          onSuccess={async () => {
+            try {
+              const r = await fetchQuotations();
+              if (r.success && Array.isArray(r.data)) setQuotations(r.data as APIQuotation[]);
+            } catch {}
+          }}
+        />
+      )}
 
-      <QuotationUpdateModal
-        isOpen={!!editQuotation}
-        onClose={() => setEditQuotation(null)}
-        quotation={editQuotation}
-        onSuccess={async () => {
-          try {
-            const r = await fetchQuotations();
-            if (r.success && Array.isArray(r.data)) setQuotations(r.data as APIQuotation[]);
-          } catch {}
-        }}
-      />
+      {canUpdate && (
+        <QuotationUpdateModal
+          isOpen={!!editQuotation}
+          onClose={() => setEditQuotation(null)}
+          quotation={editQuotation}
+          onSuccess={async () => {
+            try {
+              const r = await fetchQuotations();
+              if (r.success && Array.isArray(r.data)) setQuotations(r.data as APIQuotation[]);
+            } catch {}
+          }}
+        />
+      )}
     </div>
   );
 };

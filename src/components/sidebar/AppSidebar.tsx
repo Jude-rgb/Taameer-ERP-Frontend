@@ -9,6 +9,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useSystemStore } from '@/store/useSystemStore';
 import { cn } from '@/lib/utils';
 import { useThemeStore } from '@/store/useThemeStore';
+import { useAuthStore } from '@/store/useAuthStore';
+import { canAccessModule, normalizeRole, pathToModuleId } from '@/lib/rbac';
 const menuItems = [{
   title: 'Dashboard',
   url: '/',
@@ -69,6 +71,8 @@ export function AppSidebar() {
   const location = useLocation();
   const currentPath = location.pathname;
   const [openGroups, setOpenGroups] = useState<string[]>(['Inventory', 'Sales']);
+  const { user } = useAuthStore();
+  const role = normalizeRole(user?.role);
   
   const isActive = (path: string) => currentPath === path;
   const isGroupActive = (items: { url: string; }[]) => 
@@ -128,7 +132,20 @@ export function AppSidebar() {
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1">
-                {menuItems.map((item, index) => (
+                {menuItems
+                  .filter((item) => {
+                    if ('items' in item && Array.isArray((item as any).items)) {
+                      const anyVisible = (item as any).items.some((sub: any) => {
+                        const mid = pathToModuleId(sub.url || '/');
+                        return mid ? canAccessModule(role, mid) : true;
+                      });
+                      return anyVisible;
+                    }
+                    const url = (item as any).url as string | undefined;
+                    const mid = pathToModuleId(url || '/');
+                    return mid ? canAccessModule(role, mid) : true;
+                  })
+                  .map((item, index) => (
                   <SidebarMenuItem key={item.title}>
                     {item.items ? (
                       <SidebarTooltip content={item.title}>
@@ -164,29 +181,34 @@ export function AppSidebar() {
                              </div>
                            </CollapsibleTrigger>
                           {open && (
-                             <CollapsibleContent>
+                              <CollapsibleContent>
                                <div>
                                  <SidebarMenuSub className="ml-6 mt-1 space-y-1">
-                                   {item.items.map((subItem) => (
-                                     <SidebarMenuSubItem key={subItem.url}>
-                                       <div>
-                                          <SidebarMenuSubButton 
-                                            asChild 
-                                            isActive={isActive(subItem.url)}
-                                            className={cn(
-                                              "rounded-lg h-8 transition-all duration-200 text-sm focus-brand",
-                                               isActive(subItem.url) 
-                                                 ? "bg-primary/10 text-primary border border-primary/20 hover:bg-primary/15" 
-                                                 : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                                            )}
-                                          >
-                                          <NavLink to={subItem.url}>
-                                             <span className="text-sm">{subItem.title}</span>
-                                          </NavLink>
-                                         </SidebarMenuSubButton>
-                                       </div>
-                                     </SidebarMenuSubItem>
-                                  ))}
+                                     {item.items
+                                      .filter((subItem) => {
+                                        const mid = pathToModuleId(subItem.url || '/');
+                                        return mid ? canAccessModule(role, mid) : true;
+                                      })
+                                      .map((subItem) => (
+                                        <SidebarMenuSubItem key={subItem.url}>
+                                          <div>
+                                            <SidebarMenuSubButton 
+                                              asChild 
+                                              isActive={isActive(subItem.url)}
+                                              className={cn(
+                                                "rounded-lg h-8 transition-all duration-200 text-sm focus-brand",
+                                                 isActive(subItem.url) 
+                                                   ? "bg-primary/10 text-primary border border-primary/20 hover:bg-primary/15" 
+                                                   : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                                              )}
+                                            >
+                                            <NavLink to={subItem.url}>
+                                               <span className="text-sm">{subItem.title}</span>
+                                            </NavLink>
+                                           </SidebarMenuSubButton>
+                                          </div>
+                                        </SidebarMenuSubItem>
+                                      ))}
                                  </SidebarMenuSub>
                                </div>
                              </CollapsibleContent>

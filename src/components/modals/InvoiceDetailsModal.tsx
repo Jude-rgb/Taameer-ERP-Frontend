@@ -11,6 +11,8 @@ import AddInvoicePaymentModal from '@/components/modals/AddInvoicePaymentModal';
 import InvoiceRefundModal from '@/components/modals/InvoiceRefundModal';
 import { formatDate, formatOMRCurrency, getInvoiceStatusColor } from '@/utils/formatters';
 import { generateInvoicePDF, generateSubInvoicePDF } from '@/components/pdf';
+import { useAuthStore } from '@/store/useAuthStore';
+import { canPerform, normalizeRole } from '@/lib/rbac';
 import api from '@/services/config.js';
 
 interface InvoiceDetailsModalProps {
@@ -27,6 +29,9 @@ export const InvoiceDetailsModal: React.FC<InvoiceDetailsModalProps> = ({ isOpen
   const { toast } = useToast();
   const [isAddPaymentOpen, setIsAddPaymentOpen] = useState(false);
   const [isRefundOpen, setIsRefundOpen] = useState(false);
+  const { user } = useAuthStore();
+  const role = normalizeRole(user?.role);
+  const canRefund = canPerform(role, 'invoice.refund');
 
   // Keep a stable ref to the fetcher to avoid reloading on unrelated re-renders
   const fetchDetailsRef = useRef(fetchDetails);
@@ -339,13 +344,15 @@ export const InvoiceDetailsModal: React.FC<InvoiceDetailsModalProps> = ({ isOpen
                   <Button onClick={() => setIsAddPaymentOpen(true)} disabled={isPaid}>
                     Make Payment
                   </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={() => setIsRefundOpen(true)}
-                    disabled={!(details.invoice_payment && details.invoice_payment.length>0) || currentGrandTotalAfterRefund <= 0.0005}
-                  >
-                    Refund
-                  </Button>
+                  {canRefund && (
+                    <Button
+                      variant="destructive"
+                      onClick={() => setIsRefundOpen(true)}
+                      disabled={!(details.invoice_payment && details.invoice_payment.length>0) || currentGrandTotalAfterRefund <= 0.0005}
+                    >
+                      Refund
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -363,19 +370,21 @@ export const InvoiceDetailsModal: React.FC<InvoiceDetailsModalProps> = ({ isOpen
                 }
               }}
             />
-            <InvoiceRefundModal
-              isOpen={isRefundOpen}
-              onClose={() => setIsRefundOpen(false)}
-              invoice={details}
-              onSuccess={async () => {
-                if (invoice) {
-                  try {
-                    const resp = await fetchDetails(invoice.id);
-                    if (resp.success) setDetails(resp.data);
-                  } catch {}
-                }
-              }}
-            />
+            {canRefund && (
+              <InvoiceRefundModal
+                isOpen={isRefundOpen}
+                onClose={() => setIsRefundOpen(false)}
+                invoice={details}
+                onSuccess={async () => {
+                  if (invoice) {
+                    try {
+                      const resp = await fetchDetails(invoice.id);
+                      if (resp.success) setDetails(resp.data);
+                    } catch {}
+                  }
+                }}
+              />
+            )}
           </div>
         )}
       </DialogContent>

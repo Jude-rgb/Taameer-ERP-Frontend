@@ -18,8 +18,15 @@ import { SystemSettings } from "./pages/SystemSettings";
 import { Suppliers } from "./pages/Suppliers";
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { useAuthStore } from '@/store/useAuthStore';
+import { canAccessModule, normalizeRole, MODULES } from '@/lib/rbac';
 
 const queryClient = new QueryClient();
+
+const RoleAware = ({ children }: { children: React.ReactNode }) => {
+  // Force mount to allow ProtectedRoute to redirect; per-route checks handled there
+  return <>{children}</>;
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -35,17 +42,17 @@ const App = () => (
         }>
           <Route index element={<Dashboard />} />
           <Route path="dashboard" element={<Dashboard />} />
-          <Route path="inventory/products" element={<Products />} />
-          <Route path="inventory/purchase-orders" element={<PurchaseOrders />} />
-          <Route path="inventory/stock" element={<StockManagement />} />
-          <Route path="sales/quotations" element={<Quotations />} />
-          <Route path="sales/invoices" element={<Invoices />} />
-          <Route path="sales/delivery-notes" element={<DeliveryNotes />} />
-          <Route path="customers" element={<Customers />} />
-          <Route path="suppliers" element={<Suppliers />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="users" element={<UserManagement />} />
-          <Route path="settings" element={<SystemSettings />} />
+          <Route path="inventory/products" element={<RoleAware><Products /></RoleAware>} />
+          <Route path="inventory/purchase-orders" element={<RoleAware><PurchaseOrders /></RoleAware>} />
+          <Route path="inventory/stock" element={<RoleAware><StockManagement /></RoleAware>} />
+          <Route path="sales/quotations" element={<RoleAware><Quotations /></RoleAware>} />
+          <Route path="sales/invoices" element={<RoleAware><Invoices /></RoleAware>} />
+          <Route path="sales/delivery-notes" element={<RoleAware><DeliveryNotes /></RoleAware>} />
+          <Route path="customers" element={<RoleAware><Customers /></RoleAware>} />
+          <Route path="suppliers" element={<RoleAware><Suppliers /></RoleAware>} />
+          <Route path="reports" element={<RoleAware><Reports /></RoleAware>} />
+          <Route path="users" element={<RoleAware><UserManagement /></RoleAware>} />
+          <Route path="settings" element={<RoleAware><SystemSettings /></RoleAware>} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

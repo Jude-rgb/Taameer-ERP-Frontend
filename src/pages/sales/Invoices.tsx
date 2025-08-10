@@ -66,7 +66,7 @@ export const Invoices = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string | number>>(new Set());
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filters, setFilters] = useState<InvoiceFilters>({ paymentStatus: null, deliveryStatus: null, fromDate: null, toDate: null });
-  const [showMyData, setShowMyData] = useState(false);
+  const [showMyData, setShowMyData] = useState<boolean>(false);
 
   const storedUser = (() => {
     try {
@@ -151,6 +151,8 @@ export const Invoices = () => {
   };
 
   const filteredInvoices = useMemo(() => invoices.filter(matchesFilters), [invoices, filters, showMyData, currentUserId]);
+
+  const isMarketingOfficer = storedUser?.role === 'Marketing_Officer';
 
   // KPI values
   const totalInvoices = filteredInvoices.length;

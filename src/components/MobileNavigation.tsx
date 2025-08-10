@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useSystemStore } from '@/store/useSystemStore';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/store/useAuthStore';
+import { canAccessModule, normalizeRole } from '@/lib/rbac';
 
 const menuItems = [
   {
@@ -64,6 +66,8 @@ export function MobileNavigation({ children }: MobileNavigationProps) {
   const { settings } = useSystemStore();
   const location = useLocation();
   const currentPath = location.pathname;
+  const { user } = useAuthStore();
+  const role = normalizeRole(user?.role);
 
   const isActive = (path: string) => currentPath === path;
   const isGroupActive = (items: { url: string }[]) => 
@@ -105,7 +109,16 @@ export function MobileNavigation({ children }: MobileNavigationProps) {
         
         <div className="flex-1 overflow-y-auto p-4">
           <nav className="space-y-2">
-            {menuItems.map((item) => (
+            {menuItems
+              .filter((item) => {
+                if ('items' in item && Array.isArray((item as any).items)) {
+                  return (item as any).items.some((sub: any) => canAccessModule(role, sub.url.replace(/^\//, '') as any));
+                }
+                const url = (item as any).url as string | undefined;
+                if (!url) return true;
+                return canAccessModule(role, url.replace(/^\//, '') as any);
+              })
+              .map((item) => (
               <div key={item.title}>
                 {item.items ? (
                   <Collapsible 
@@ -139,7 +152,9 @@ export function MobileNavigation({ children }: MobileNavigationProps) {
                         exit={{ opacity: 0, height: 0 }}
                         className="ml-8 mt-2 space-y-1"
                       >
-                        {item.items.map((subItem) => (
+                         {item.items
+                           .filter((subItem) => canAccessModule(role, subItem.url.replace(/^\//, '') as any))
+                           .map((subItem) => (
                           <NavLink
                             key={subItem.url}
                             to={subItem.url}
@@ -155,7 +170,7 @@ export function MobileNavigation({ children }: MobileNavigationProps) {
                           >
                             {subItem.title}
                           </NavLink>
-                        ))}
+                         ))}
                       </motion.div>
                     </CollapsibleContent>
                   </Collapsible>

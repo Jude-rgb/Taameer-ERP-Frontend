@@ -15,6 +15,7 @@ import { dummyProducts } from '@/data/dummyData';
 import { useProductStore } from '@/store/useProductStore';
 import { formatOMRCurrency } from '@/utils/formatters';
 import { useAuthStore } from '@/store/useAuthStore';
+import { canPerform, normalizeRole } from '@/lib/rbac';
 import { useQuotationStore } from '@/store/useQuotationStore';
 import { useInvoiceStore } from '@/store/useInvoiceStore';
 import { useToast } from '@/hooks/use-toast';
@@ -49,7 +50,15 @@ export const Dashboard = () => {
   const { products, fetchProducts, isLoading: productsLoading } = useProductStore();
   const { toast } = useToast();
   const { theme } = useThemeStore();
-  const [showMyData, setShowMyData] = useState(false);
+  const [showMyData, setShowMyData] = useState<boolean>(() => {
+    try {
+      const s = localStorage.getItem('user');
+      const u = s ? JSON.parse(s) : null;
+      return u?.role === 'Marketing_Officer';
+    } catch {
+      return false;
+    }
+  });
   const navigate = useNavigate();
   
   // Zustand stores
@@ -164,9 +173,14 @@ export const Dashboard = () => {
     }
   ];
 
+  const isMarketingOfficer = user?.role === 'Marketing_Officer';
+
+  const role = normalizeRole(user?.role);
+  const canCreateQuotation = canPerform(role, 'quotation.create');
+  const canCreateProduct = canPerform(role, 'product.create');
   const quickActions = [
-    { title: 'Create Quotation', icon: Quote, color: 'bg-gradient-primary', description: 'New quote for customers', to: '/sales/quotations' },
-    { title: 'Add Product', icon: Package, color: 'bg-gradient-success', description: 'Expand inventory', to: '/inventory/products' },
+    ...(canCreateQuotation ? [{ title: 'Create Quotation', icon: Quote, color: 'bg-gradient-primary', description: 'New quote for customers', to: '/sales/quotations' }] : []),
+    ...(canCreateProduct ? [{ title: 'Add Product', icon: Package, color: 'bg-gradient-success', description: 'Expand inventory', to: '/inventory/products' }] : []),
     { title: 'View Reports', icon: BarChart, color: 'bg-gradient-warning', description: 'Business analytics', to: '/reports' },
     { title: 'Manage Users', icon: Users, color: 'bg-gradient-teal', description: 'Team management', to: '/users' },
   ];
@@ -246,6 +260,7 @@ export const Dashboard = () => {
               checked={showMyData}
               onCheckedChange={handleMyDataToggle}
               className="data-[state=checked]:bg-primary"
+              disabled={isMarketingOfficer}
             />
           </div>
         </div>
