@@ -34,6 +34,15 @@ jobs:
             cp -f public/.htaccess dist/.htaccess
           fi
 
+      - name: Debug FTP root and target path
+        shell: bash
+        run: |
+          sudo apt-get update -y >/dev/null 2>&1
+          sudo apt-get install -y lftp >/dev/null 2>&1
+          TARGET_DIR="${{ endsWith(secrets.FTP_SERVER_DIR_DEV, '/') && secrets.FTP_SERVER_DIR_DEV || format('{0}/', secrets.FTP_SERVER_DIR_DEV) }}"
+          echo "Listing FTP root and target directory (values masked in logs)"
+          lftp -e "set ftp:ssl-force true; set ssl:verify-certificate false; set ftp:passive-mode true; pwd; cls -l; cd $TARGET_DIR; pwd; cls -l; bye" -u "${{ secrets.FTP_USERNAME }}","${{ secrets.FTP_PASSWORD }}" "ftps://${{ secrets.FTP_SERVER }}:21"
+
       - name: Deploy via FTP to Hostinger
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
@@ -44,5 +53,5 @@ jobs:
           server-dir: ${{ endsWith(secrets.FTP_SERVER_DIR_DEV, '/') && secrets.FTP_SERVER_DIR_DEV || format('{0}/', secrets.FTP_SERVER_DIR_DEV) }}
           protocol: ftps
           dangerous-clean-slate: true
-          log-level: minimal
+          log-level: verbose
           timeout: 600000
