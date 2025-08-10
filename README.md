@@ -60,9 +60,14 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
-## How can I deploy this project?
+## Environments
 
-Simply open [Lovable](https://lovable.dev/projects/789ac5f4-8986-4b79-8d40-b6bf969c9a8e) and click on Share -> Publish.
+This project uses Vite environment variables. Set the API base URL via `VITE_API_BASE_URL`.
+
+- Development example: `VITE_API_BASE_URL=https://taameerv2staging.gethorcrm.com/`
+- Production example: `VITE_API_BASE_URL=https://taameerv2.gethorcrm.com/`
+
+Create `.env.development` and `.env.production` in the project root.
 
 ## Can I connect a custom domain to my Lovable project?
 
