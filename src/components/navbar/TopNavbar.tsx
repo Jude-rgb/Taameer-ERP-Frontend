@@ -1,7 +1,6 @@
-import { useState } from 'react';
-import { Search, Bell, Moon, Sun, Languages, Settings, User, Menu } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Bell, Moon, Sun, Languages, Settings, User, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -20,6 +19,7 @@ import { MobileNavigation } from '@/components/MobileNavigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useThemeStore } from '@/store/useThemeStore';
 import { useSystemStore } from '@/store/useSystemStore';
+import Lottie, { LottieRefCurrentProps } from 'lottie-react';
 
 export const TopNavbar = () => {
   const [profileOpen, setProfileOpen] = useState(false);
@@ -27,6 +27,29 @@ export const TopNavbar = () => {
   const { theme, isRTL, toggleTheme, toggleRTL } = useThemeStore();
   const { settings } = useSystemStore();
   const { state } = useSidebar();
+  const [flyingCat, setFlyingCat] = useState<any | null>(null);
+  const lottieRef = useRef<LottieRefCurrentProps>(null);
+
+  // Load lottie json from public folder
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch('/Flying%20Cat.json');
+        const data = await res.json();
+        setFlyingCat(data);
+      } catch (_err) {
+        // Silent fail – keep area empty if file missing
+      }
+    };
+    load();
+  }, []);
+
+  // Set playback speed once the animation is available
+  useEffect(() => {
+    if (lottieRef.current) {
+      lottieRef.current.setSpeed(0.6);
+    }
+  }, [flyingCat]);
 
   return (
     <>
@@ -53,13 +76,17 @@ export const TopNavbar = () => {
               <p className="text-xs text-muted-foreground">Construction Materials</p>
             </div>
             
-            {/* Search - responsive */}
-            <div className="relative flex-1 max-w-sm lg:max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <Input
-                placeholder="Search..."
-                className="pl-10 bg-background/60 border-border/50 h-9 text-sm focus-brand"
-              />
+            {/* Lottie in place of search field */}
+            <div className="relative flex-1 max-w-sm lg:max-w-md h-14 flex items-center">
+              {flyingCat && (
+                <Lottie
+                  lottieRef={lottieRef}
+                  animationData={flyingCat}
+                  loop
+                  autoplay
+                  style={{ height: 48 }}
+                />
+              )}
             </div>
           </div>
 

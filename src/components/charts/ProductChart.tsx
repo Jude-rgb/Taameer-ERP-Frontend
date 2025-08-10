@@ -8,7 +8,7 @@ import {
   Legend,
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -44,6 +44,20 @@ export const ProductChart: React.FC<ProductChartProps> = ({
   const currentMonthKey = availableMonths[currentMonthIndex];
   const currentMonthData = monthlyData[currentMonthKey] || data;
 
+  // Default to latest available month whenever monthlyData changes
+  useEffect(() => {
+    if (availableMonths.length > 0) {
+      setCurrentMonthIndex(availableMonths.length - 1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [monthlyData]);
+
+  // Determine if any month has data (or fallback aggregated data has rows)
+  const hasAnyData = (
+    availableMonths.length > 0 &&
+    availableMonths.some((m) => (monthlyData[m] || []).length > 0)
+  ) || (data && data.length > 0);
+
   // Format month for display
   const formatMonthDisplay = (monthKey: string) => {
     const [year, month] = monthKey.split('-');
@@ -51,14 +65,23 @@ export const ProductChart: React.FC<ProductChartProps> = ({
     return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
   };
 
-  // If no data or loading, show empty chart
-  if (isLoading || (!currentMonthData || currentMonthData.length === 0)) {
+  // Show loading state
+  if (isLoading) {
     return (
       <div className="h-[300px] w-full flex items-center justify-center">
         <div className="text-center">
-          <div className="text-muted-foreground text-sm">
-            {isLoading ? 'Loading product data...' : 'No product data available'}
-          </div>
+          <div className="text-muted-foreground text-sm">Loading product data...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // If no months have any data at all, show global empty state
+  if (!hasAnyData) {
+    return (
+      <div className="h-[300px] w-full flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-muted-foreground text-sm">No product data available</div>
         </div>
       </div>
     );
@@ -197,10 +220,18 @@ export const ProductChart: React.FC<ProductChartProps> = ({
         </div>
       )}
       
-      {/* Chart */}
-      <div className="h-[250px] w-full">
-        <Bar data={chartData} options={options} />
-      </div>
+      {/* Content: chart or month-specific empty state */}
+      {currentMonthData && currentMonthData.length > 0 ? (
+        <div className="h-[250px] w-full">
+          <Bar data={chartData} options={options} />
+        </div>
+      ) : (
+        <div className="h-[250px] w-full flex items-center justify-center">
+          <div className="text-center text-muted-foreground text-sm">
+            No product data for selected month
+          </div>
+        </div>
+      )}
     </div>
   );
 };

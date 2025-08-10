@@ -80,13 +80,15 @@ export const PurchaseOrders = () => {
 
   // Helper function to get supplier name - must be defined before useMemo
   const getSupplierName = (supplier: any) => {
+    // Handle cases where supplier is null/undefined
+    if (!supplier) return 'N/A';
     if (supplier.supplier_type === 'business_type') {
       return supplier.business_name || 'N/A';
-    } else {
-      const firstName = supplier.first_name || '';
-      const lastName = supplier.last_name || '';
-      return `${firstName} ${lastName}`.trim() || 'N/A';
     }
+    const firstName = supplier.first_name || '';
+    const lastName = supplier.last_name || '';
+    const fullName = `${firstName} ${lastName}`.trim();
+    return fullName || 'N/A';
   };
 
   // Fetch purchase orders on component mount - following same pattern as other pages
@@ -223,16 +225,16 @@ export const PurchaseOrders = () => {
 
   const getSupplierInitials = (supplier: any) => {
     const name = getSupplierName(supplier);
-    if (name === 'N/A') return 'S';
+    if (!name || name === 'N/A') return 'S';
     return name
       .split(' ')
-      .map((name: string) => name[0])
+      .map((part: string) => part[0])
       .join('')
       .toUpperCase()
       .slice(0, 2);
   };
 
-  const getStatusBadge = (status: string, type: 'purchase' | 'payment') => {
+  const getStatusBadge = (status: string | null | undefined, type: 'purchase' | 'payment') => {
     const statusMap = {
       purchase: {
         completed: { label: 'Completed', className: 'bg-green-500 text-white' },
@@ -248,12 +250,13 @@ export const PurchaseOrders = () => {
       }
     };
 
-    const statusConfig = statusMap[type][status.toLowerCase()] || { label: status, className: 'bg-gray-500 text-white' };
+    const safeStatus = (status || '').toLowerCase();
+    const statusConfig = (statusMap as any)[type][safeStatus] || { label: status || 'Unknown', className: 'bg-gray-500 text-white' };
     return <Badge className={`justify-center ${statusConfig.className}`}>{statusConfig.label}</Badge>;
   };
 
-  const formatCurrency = (amount: string, currencyType: string = 'OMR', decimalPlaces: number = 3) => {
-    const numAmount = parseFloat(amount) || 0;
+  const formatCurrency = (amount: string | null | undefined, currencyType: string = 'OMR', decimalPlaces: number = 3) => {
+    const numAmount = parseFloat(String(amount ?? 0)) || 0;
     return `${currencyType} ${numAmount.toFixed(decimalPlaces)}`;
   };
 
@@ -342,7 +345,7 @@ export const PurchaseOrders = () => {
           <div>
             <div className="font-medium text-foreground">{getSupplierName(order.suppliers)}</div>
             <div className="text-xs text-muted-foreground">
-              {order.suppliers.supplier_type === 'business_type' ? 'Business' : 'Individual'}
+              {order.suppliers ? (order.suppliers?.supplier_type === 'business_type' ? 'Business' : 'Individual') : 'Unknown'}
             </div>
           </div>
         </div>
