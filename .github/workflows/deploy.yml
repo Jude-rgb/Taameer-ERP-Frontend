@@ -8,6 +8,8 @@ on:
 
 jobs:
   deploy:
+    # Run this workflow only for the official repository
+    if: ${{ github.repository == 'Taameer-Construction-Material/Taameer-ERP-Frontend' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
