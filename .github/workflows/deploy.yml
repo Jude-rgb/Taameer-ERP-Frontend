@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - development
-      - main
       - production
 
 jobs:
@@ -19,6 +18,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Needed for merge and tag history
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -30,15 +31,10 @@ jobs:
 
       - name: Build
         env:
-          VITE_API_BASE_URL: ${{ startsWith(github.ref_name, 'development') && 'https://taameerv2staging.gethorcrm.com/' || 'https://taameerv2.gethorcrm.com/' }}
+          VITE_API_BASE_URL: ${{ github.ref_name == 'development' && 'https://taameerv2staging.gethorcrm.com/' || 'https://taameerv2.gethorcrm.com/' }}
         run: npm run build
 
-      - name: Archive production artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build
-          path: dist
-
+      # 🔹 Deploy Staging (development branch)
       - name: Deploy via FTP to Hostinger (Development)
         if: github.ref_name == 'development'
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -51,8 +47,9 @@ jobs:
           local-dir: ./dist/
           dangerous-clean-slate: true
 
+      # 🔹 Deploy Production (production branch)
       - name: Deploy via FTP to Hostinger (Production)
-        if: github.ref_name == 'main' || github.ref_name == 'production'
+        if: github.ref_name == 'production'
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.PROD_FTP_SERVER }}
@@ -63,9 +60,32 @@ jobs:
           local-dir: ./dist/
           dangerous-clean-slate: true
 
-      - name: Create Release tag on production
-        if: github.ref_name == 'main' || github.ref_name == 'production'
+      # 🔹 Merge production → main after deploy
+      - name: Merge production into main
+        if: github.ref_name == 'production'
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git checkout main
+          git merge production --no-ff --commit -m "Merge production into main [skip ci]"
+          git push origin main
+
+      # 🔹 Auto-bump version & tag (semantic)
+      - name: Bump version and create tag
+        if: github.ref_name == 'production'
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          release_branches: production
+          default_bump: patch
+          tag_prefix: v
+          create_annotated_tag: true
+
+      # 🔹 Create GitHub Release with notes
+      - name: Create GitHub Release
+        if: github.ref_name == 'production'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ github.run_number }}
+          tag_name: ${{ steps.tag_version.outputs.new_tag }}
           generate_release_notes: true
