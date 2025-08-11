@@ -13,6 +13,7 @@ import { usePurchaseOrderStore } from '@/store/usePurchaseOrderStore';
 import { useToast } from '@/hooks/use-toast';
 import { formatDate } from "@/utils/formatters";
 import { generatePurchaseOrderPDF } from "@/components/pdf";
+import api from "@/services/config.js";
 
 interface PurchaseOrder {
   id: number;

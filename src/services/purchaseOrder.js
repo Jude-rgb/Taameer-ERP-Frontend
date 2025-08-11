@@ -107,10 +107,8 @@ export const createPayment = async (payload) => {
       {
         headers:
           payload instanceof FormData
-            ? {}
-            : {
-                "Content-Type": "application/json",
-              },
+            ? { "Content-Type": "multipart/form-data" }
+            : { "Content-Type": "application/json" },
       }
     );
 
