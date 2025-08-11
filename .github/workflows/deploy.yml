@@ -73,6 +73,33 @@ jobs:
           git push origin main
 
       # 🔹 Auto-bump version & tag (semantic)
+      - name: Determine version bump (from commit)
+        if: github.ref_name == 'production'
+        id: determine_bump
+        shell: bash
+        run: |
+          # Collect latest commit message; PR body when available
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          TEXT="$COMMIT_MSG"
+
+          # Default bump
+          BUMP=patch
+
+          # Accept any of these markers in the commit message:
+          #   #major | semver: major
+          #   #minor | semver: minor
+          #   #patch | semver: patch
+          if echo "$TEXT" | grep -qiE '(#major|semver:\s*major)'; then
+            BUMP=major
+          elif echo "$TEXT" | grep -qiE '(#minor|semver:\s*minor)'; then
+            BUMP=minor
+          elif echo "$TEXT" | grep -qiE '(#patch|semver:\s*patch)'; then
+            BUMP=patch
+          fi
+
+          echo "Detected bump: $BUMP"
+          echo "bump=$BUMP" >> $GITHUB_OUTPUT
+
       - name: Bump version and create tag
         if: github.ref_name == 'production'
         id: tag_version
@@ -80,7 +107,8 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           release_branches: production
-          default_bump: patch
+          # Use detected bump; falls back to patch if not specified
+          default_bump: ${{ steps.determine_bump.outputs.bump || 'patch' }}
           tag_prefix: v
           create_annotated_tag: true
 
