@@ -105,13 +105,25 @@ export async function generateQuotationPDF(
       }
       
       const res = await fetch(absoluteUrl);
+      if (!res.ok) {
+        throw new Error(`Failed to fetch image: ${res.status}`);
+      }
+      
       const blob = await res.blob();
-      return await new Promise((resolve) => {
+      
+      // Ensure we're handling PNG properly
+      if (blob.type !== 'image/png' && blob.type !== 'image/jpeg') {
+        console.warn('Image type not optimal for PDF:', blob.type);
+      }
+      
+      return await new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error('Failed to read image file'));
         reader.readAsDataURL(blob);
       });
-    } catch {
+    } catch (error) {
+      console.error('Error loading image:', error);
       return null;
     }
   };
@@ -179,8 +191,8 @@ export async function generateQuotationPDF(
     
     // Draw logo without background rectangle to prevent black background issues
     if (logoDataUrl) {
-      // Add logo directly without background rectangle
-      doc.addImage(logoDataUrl, 'PNG', logoX, logoY, logoW, logoH, undefined, 'FAST');
+      // Add logo with proper transparency handling
+      doc.addImage(logoDataUrl, 'PNG', logoX, logoY, logoW, logoH, undefined, 'NONE');
     } else {
       // Fallback text when no logo is available
       doc.setDrawColor(border[0], border[1], border[2]);
