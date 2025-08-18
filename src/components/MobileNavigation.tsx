@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, Package, Receipt, Users, BarChart3, Settings, X, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, Package, Receipt, Users, BarChart3, Settings, X, ChevronDown, BookOpen } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -43,6 +43,11 @@ const menuItems = [
     title: 'Reports',
     url: '/reports',
     icon: BarChart3
+  },
+  {
+    title: 'Documentation',
+    url: '/documentation',
+    icon: BookOpen
   },
   {
     title: 'User Management',
