@@ -74,23 +74,18 @@ export async function generateDeliveryNotePDF(
   // Load image URLs as base64 for embedding
   const loadImageAsDataURL = async (url: string): Promise<string | null> => {
     try {
-      // Get API base URL for asset resolution
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://taameerv2staging.gethorcrm.com/';
-      
+      // Use public folder for logo assets (served by Vite/frontend)
       let absoluteUrl = url;
       if (/^https?:/i.test(url)) {
         absoluteUrl = url;
-      } else if (url.startsWith('/saas-uploads/') || url.startsWith('saas-uploads/')) {
-        // Use API base URL for saas-uploads assets
-        const cleanUrl = url.replace(/^\/+/, '');
-        absoluteUrl = `${apiBaseUrl.replace(/\/$/, '')}/${cleanUrl}`;
       } else if (url.startsWith('/')) {
-        // Use current origin for other root-relative assets  
+        // Use current origin for public folder assets
         const origin = typeof window !== 'undefined' ? window.location.origin : '';
         absoluteUrl = `${origin}${url}`;
       } else {
-        // Backend-served relative paths like storage/unloading/...
-        absoluteUrl = `${apiBaseUrl.replace(/\/$/, '')}/${url.replace(/^\/+/, '')}`;
+        // Relative paths - prepend with current origin
+        const origin = typeof window !== 'undefined' ? window.location.origin : '';
+        absoluteUrl = `${origin}/${url}`;
       }
       
       const res = await fetch(absoluteUrl);
