@@ -14,6 +14,7 @@ export const MODULES = {
   Customers: 'customers',
   Suppliers: 'suppliers',
   Reports: 'reports',
+  Documentation: 'documentation',
   Users: 'users',
   Settings: 'settings',
 } as const;
@@ -40,29 +41,32 @@ const ALL_MODULES: ModuleId[] = [
   MODULES.Customers,
   MODULES.Suppliers,
   MODULES.Reports,
+  MODULES.Documentation,
   MODULES.Users,
   MODULES.Settings,
 ];
 
 const ROLE_MODULES: Record<Role, ModuleId[]> = {
   ADMIN: ALL_MODULES,
-  Marketing_Officer: ALL_MODULES.filter((m) =>
+  Marketing_Officer: ALL_MODULES.filter((m: ModuleId) =>
     ![
-      MODULES.Settings, // system setup
-      MODULES.Users, // user management
+      MODULES.Settings, // system setup - admin only
+      MODULES.Users, // user management - admin only
       MODULES.Reports, // reports
       MODULES.Suppliers, // suppliers
       MODULES.Stock, // stock management
       MODULES.PurchaseOrders, // purchase order
+      MODULES.Documentation, // documentation - admin only
     ].includes(m)
   ),
   Warehouse: [MODULES.DeliveryNotes], // only delivery notes
-  Accounts: ALL_MODULES.filter((m) =>
+  Accounts: ALL_MODULES.filter((m: ModuleId) =>
     ![
-      MODULES.Settings, // system setup
-      MODULES.Users, // user management
+      MODULES.Settings, // system setup - admin only
+      MODULES.Users, // user management - admin only
       MODULES.Products, // product module hidden
       MODULES.Stock, // stock management hidden
+      MODULES.Documentation, // documentation - admin only
     ].includes(m)
   ),
 };
@@ -138,6 +142,7 @@ export function pathToModuleId(pathname: string): ModuleId | null {
   if (cleaned === 'customers') return MODULES.Customers;
   if (cleaned === 'suppliers') return MODULES.Suppliers;
   if (cleaned === 'reports') return MODULES.Reports;
+  if (cleaned === 'documentation') return MODULES.Documentation;
   if (cleaned === 'users') return MODULES.Users;
   if (cleaned === 'settings') return MODULES.Settings;
   return null;
