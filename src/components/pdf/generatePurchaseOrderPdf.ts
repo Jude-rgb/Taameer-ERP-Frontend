@@ -88,7 +88,21 @@ export async function generatePurchaseOrderPDF(
   // Load logo
   const loadImageAsDataURL = async (url: string): Promise<string | null> => {
     try {
-      const res = await fetch(url);
+      // Ensure absolute URL, but do NOT prefix API base for app assets (e.g., /saas-uploads/...)
+      let absoluteUrl = url;
+      if (/^https?:/i.test(url)) {
+        absoluteUrl = url;
+      } else if (url.startsWith('/')) {
+        // Use current origin for root-relative assets
+        const origin = typeof window !== 'undefined' ? window.location.origin : '';
+        absoluteUrl = `${origin}${url}`;
+      } else {
+        // Backend-served relative paths like storage/unloading/...
+        const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+        absoluteUrl = `${baseUrl}/${url.replace(/^\/+/, '')}`;
+      }
+      
+      const res = await fetch(absoluteUrl);
       const blob = await res.blob();
       return await new Promise((resolve) => {
         const reader = new FileReader();
@@ -120,12 +134,13 @@ export async function generatePurchaseOrderPDF(
   const textDark: [number, number, number] = [33, 37, 41];
   const noticeBg: [number, number, number] = [255, 243, 205];
 
-  const drawPageNumber = (pageNumber: number) => {
+  const drawPageNumber = (pageNumber: number, yPosition?: number) => {
     // Page number above footer divider with proper spacing
+    const y = yPosition || pageHeight - 25; // Use provided position or default
     doc.setTextColor(textDark[0], textDark[1], textDark[2]);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.text(`Page ${pageNumber}`, pageWidth / 2, pageHeight - 25, { align: 'center' }); // Moved up from -22 to -25
+    doc.text(`Page ${pageNumber}`, pageWidth / 2, y, { align: 'center' });
     doc.setFont('helvetica', 'normal');
   };
 
@@ -136,14 +151,15 @@ export async function generatePurchaseOrderPDF(
     const logoWidth = 45; // Increased logo size
     const logoHeight = 18;
     
-    // Logo background with subtle border
-    doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
-    doc.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
-    doc.rect(logoX, logoY, logoWidth, logoHeight, 'FD');
-    
+    // Draw logo without background rectangle to prevent black background issues
     if (logoDataUrl) {
-      doc.addImage(logoDataUrl, 'PNG', logoX + 2, logoY + 2, logoWidth - 4, logoHeight - 4, undefined, 'FAST');
+      // Add logo directly without background rectangle
+      doc.addImage(logoDataUrl, 'PNG', logoX, logoY, logoWidth, logoHeight, undefined, 'FAST');
     } else {
+      // Fallback text when no logo is available
+      doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
+      doc.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
+      doc.rect(logoX, logoY, logoWidth, logoHeight, 'FD');
       doc.setTextColor(textDark[0], textDark[1], textDark[2]);
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
@@ -305,7 +321,7 @@ export async function generatePurchaseOrderPDF(
   }
 
   // Two-column layout directly under items table (left: notices + comments, right: totals)
-  let sectionTop = yAfter + 6;
+  let sectionTop = yAfter + 3; // Reduced from 6 to 3 for maximum space utilization
   const contentWidth = pageWidth - 2 * margin;
   const columnGap = 4;
   const columnWidth = (contentWidth - columnGap) / 2;
@@ -406,23 +422,218 @@ export async function generatePurchaseOrderPDF(
 
   // LEFT column: highlighted notices then comments box
   let leftCursorY = sectionTop;
-  // Comments header and box in left column
-  doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.rect(leftColX, leftCursorY, columnWidth, 10, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Comments or Special Instructions', leftColX + 3, leftCursorY + 6);
-
-  doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
-  doc.setLineWidth(0.5);
-  const commentsBoxHeight = 28;
-  doc.rect(leftColX, leftCursorY + 10, columnWidth, commentsBoxHeight, 'D');
-  if (data.note) {
-    doc.setTextColor(textDark[0], textDark[1], textDark[2]);
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(String(data.note), leftColX + 3, leftCursorY + 16);
+  
+  // Check if we need a page break for comments section BEFORE drawing anything
+  const estimatedCommentsHeight = 10 + 28 + 20; // header + minimum box + spacing
+  if (leftCursorY + estimatedCommentsHeight > pageHeight - footerHeight - 20) { // Reduced from 30 to 20 for more aggressive space utilization
+    // Move comments to next page and use full width
+    doc.addPage();
+    const pageNumber = (doc as any).internal.getNumberOfPages();
+    drawHeader();
+    drawFooter(pageNumber);
+    leftCursorY = headerHeight + 20;
+    
+    // Use full width for comments on new page
+    const fullWidth = pageWidth - 2 * margin;
+    
+    // Comments header and box in full width
+    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.rect(margin, leftCursorY, fullWidth, 10, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Comments or Special Instructions', margin + 3, leftCursorY + 6);
+    
+    doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
+    doc.setLineWidth(0.5);
+    
+    // Calculate dynamic height for comments box based on content
+    let commentsBoxHeight = 28; // Minimum height
+    if (data.note) {
+      doc.setTextColor(textDark[0], textDark[1], textDark[2]);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      
+      // Split text into lines that fit within the full width
+      const maxWidth = fullWidth - 6; // 3mm padding on each side
+      const words = String(data.note).split(' ');
+      const lines: string[] = [];
+      let currentLine = '';
+      
+      for (const word of words) {
+        const testLine = currentLine ? currentLine + ' ' + word : word;
+        const testWidth = doc.getTextWidth(testLine);
+        
+        if (testWidth <= maxWidth) {
+          currentLine = testLine;
+        } else {
+          if (currentLine) {
+            lines.push(currentLine);
+            currentLine = word;
+          } else {
+            // Single word is too long, break it
+            lines.push(word);
+          }
+        }
+      }
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+      
+      // Calculate height needed for the text
+      const lineHeight = 4; // Height per line in mm
+      const textHeight = lines.length * lineHeight;
+      const padding = 6; // 3mm top + 3mm bottom padding
+      commentsBoxHeight = Math.max(28, textHeight + padding);
+    }
+    
+    // Draw the comments box with calculated height
+    doc.rect(margin, leftCursorY + 10, fullWidth, commentsBoxHeight, 'D');
+    
+    // Draw the text with proper wrapping
+    if (data.note) {
+      doc.setTextColor(textDark[0], textDark[1], textDark[2]);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      
+      // Split text into lines that fit within the full width
+      const maxWidth = fullWidth - 6; // 3mm padding on each side
+      const words = String(data.note).split(' ');
+      const lines: string[] = [];
+      let currentLine = '';
+      
+      for (const word of words) {
+        const testLine = currentLine ? currentLine + ' ' + word : word;
+        const testWidth = doc.getTextWidth(testLine);
+        
+        if (testWidth <= maxWidth) {
+          currentLine = testLine;
+        } else {
+          if (currentLine) {
+            lines.push(currentLine);
+            currentLine = word;
+          } else {
+            // Single word is too long, break it
+            lines.push(word);
+          }
+        }
+      }
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+      
+      // Draw each line of text
+      const lineHeight = 4; // Height per line in mm
+      const startY = leftCursorY + 16; // Start text 6mm from top of box
+      
+      lines.forEach((line, index) => {
+        const y = startY + (index * lineHeight);
+        doc.text(line, margin + 3, y);
+      });
+    }
+    
+    // Update the cursor position for notices - reduce spacing to better utilize page space
+    leftCursorY = leftCursorY + 10 + commentsBoxHeight + 1; // Reduced spacing to maximum space utilization
+  } else {
+    // Comments fit on current page - use two-column layout
+    // Comments header and box in left column
+    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.rect(leftColX, leftCursorY, columnWidth, 10, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Comments or Special Instructions', leftColX + 3, leftCursorY + 6);
+    
+    doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
+    doc.setLineWidth(0.5);
+    
+    // Calculate dynamic height for comments box based on content
+    let commentsBoxHeight = 28; // Minimum height
+    if (data.note) {
+      doc.setTextColor(textDark[0], textDark[1], textDark[2]);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      
+      // Split text into lines that fit within the box width
+      const maxWidth = columnWidth - 6; // 3mm padding on each side
+      const words = String(data.note).split(' ');
+      const lines: string[] = [];
+      let currentLine = '';
+      
+      for (const word of words) {
+        const testLine = currentLine ? currentLine + ' ' + word : word;
+        const testWidth = doc.getTextWidth(testLine);
+        
+        if (testWidth <= maxWidth) {
+          currentLine = testLine;
+        } else {
+          if (currentLine) {
+            lines.push(currentLine);
+            currentLine = word;
+          } else {
+            // Single word is too long, break it
+            lines.push(word);
+          }
+        }
+      }
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+      
+      // Calculate height needed for the text
+      const lineHeight = 4; // Height per line in mm
+      const textHeight = lines.length * lineHeight;
+      const padding = 6; // 3mm top + 3mm bottom padding
+      commentsBoxHeight = Math.max(28, textHeight + padding);
+    }
+    
+    // Draw the comments box with calculated height
+    doc.rect(leftColX, leftCursorY + 10, columnWidth, commentsBoxHeight, 'D');
+    
+    // Draw the text with proper wrapping
+    if (data.note) {
+      doc.setTextColor(textDark[0], textDark[1], textDark[2]);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      
+      // Split text into lines that fit within the box width
+      const maxWidth = columnWidth - 6; // 3mm padding on each side
+      const words = String(data.note).split(' ');
+      const lines: string[] = [];
+      let currentLine = '';
+      
+      for (const word of words) {
+        const testLine = currentLine ? currentLine + ' ' + word : word;
+        const testWidth = doc.getTextWidth(testLine);
+        
+        if (testWidth <= maxWidth) {
+          currentLine = testLine;
+        } else {
+          if (currentLine) {
+            lines.push(currentLine);
+            currentLine = word;
+          } else {
+            // Single word is too long, break it
+            lines.push(word);
+          }
+        }
+      }
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+      
+      // Draw each line of text
+      const lineHeight = 4; // Height per line in mm
+      const startY = leftCursorY + 16; // Start text 6mm from top of box
+      
+      lines.forEach((line, index) => {
+        const y = startY + (index * lineHeight);
+        doc.text(line, leftColX + 3, y);
+      });
+    }
+    
+    // Update the cursor position for notices
+    leftCursorY = leftCursorY + 10 + commentsBoxHeight;
   }
 
   // Highlighted notices UNDER the two-column grid (full width)
@@ -433,17 +644,35 @@ export async function generatePurchaseOrderPDF(
   const noticePad = 5;
   const noticeLH = 5.5;
   const noticeHeight = noticePad * 2 + notices.length * noticeLH;
-  const columnsBottomLeft = leftCursorY + 10 + commentsBoxHeight;
+   
+  // Calculate the bottom position of the columns based on whether comments are on current page or new page
+  let columnsBottomLeft: number;
+  if (leftCursorY === headerHeight + 20) {
+    // Comments are on a new page, so we need to calculate based on the current page layout
+    columnsBottomLeft = leftCursorY + 10 + (data.note ? Math.max(28, (String(data.note).split(' ').length * 4) + 6) : 28);
+  } else {
+    // Comments are on current page, use the existing logic
+    columnsBottomLeft = leftCursorY + 10 + (data.note ? Math.max(28, (String(data.note).split(' ').length * 4) + 6) : 28);
+  }
+   
   const columnsBottomRight = totalsTop + totalsBoxHeight;
-  let noticesTop = Math.max(columnsBottomLeft, columnsBottomRight) + 8;
+  let noticesTop = Math.max(columnsBottomLeft, columnsBottomRight) + 1; // Reduced from 2 to 1 for maximum space utilization
 
-  // Page break if needed before notices
-  if (noticesTop + noticeHeight > pageHeight - 50) {
-    doc.addPage();
-    const pageNumber2 = (doc as any).internal.getNumberOfPages();
-    drawHeader();
-    drawFooter(pageNumber2);
-    noticesTop = headerHeight + 20;
+  // Improved page break logic for notices - be more aggressive about using available space
+  if (noticesTop + noticeHeight > pageHeight - footerHeight - 5) { // Changed from 10 to 5 for much more aggressive space utilization
+    // Check if we can fit notices on current page by reducing spacing
+    const availableSpace = pageHeight - noticesTop - footerHeight - 5;
+    if (availableSpace >= noticeHeight * 0.3) { // Reduced from 0.6 to 0.3 - if we can fit at least 30% of notices, stay on current page
+      // Reduce spacing to fit on current page - be very aggressive
+      noticesTop = Math.max(columnsBottomLeft, columnsBottomRight) + 1; // Reduced from 2 to 1 for maximum space utilization
+    } else {
+      // Only add new page if absolutely necessary
+      doc.addPage();
+      const pageNumber2 = (doc as any).internal.getNumberOfPages();
+      drawHeader();
+      drawFooter(pageNumber2);
+      noticesTop = headerHeight + 20;
+    }
   }
 
   // Draw notices across full width
@@ -467,7 +696,12 @@ export async function generatePurchaseOrderPDF(
 
   // Draw page number above footer divider
   const pageNumber = (doc as any).internal.getNumberOfPages();
-  drawPageNumber(pageNumber);
+  
+  // Position page number above footer, ensuring it doesn't overlap with notices
+  const noticesBottom = noticesTop + noticeHeight;
+  const pageNumberY = Math.max(noticesBottom + 8, pageHeight - footerHeight - 5);
+  
+  drawPageNumber(pageNumber, pageNumberY);
   drawFooter(pageNumber);
 
   // Present PDF: default to saving with a meaningful filename; open in new tab only when explicitly requested

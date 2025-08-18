@@ -84,8 +84,10 @@ export async function generateDeliveryNotePDF(
         absoluteUrl = `${origin}${url}`;
       } else {
         // Backend-served relative paths like storage/unloading/...
+        const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
         absoluteUrl = `${baseUrl}/${url.replace(/^\/+/, '')}`;
       }
+      
       const res = await fetch(absoluteUrl);
       const blob = await res.blob();
       return await new Promise((resolve) => {
@@ -129,47 +131,35 @@ export async function generateDeliveryNotePDF(
     const logoY = 10;
     const logoWidth = 45;
     const logoHeight = 18;
-
-    // Logo container
-    doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
-    doc.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
-    doc.rect(logoX, logoY, logoWidth, logoHeight, 'FD');
+    
+    // Draw logo without background rectangle to prevent black background issues
     if (logoDataUrl) {
-      doc.addImage(logoDataUrl, 'PNG', logoX + 2, logoY + 2, logoWidth - 4, logoHeight - 4, undefined, 'FAST');
+      // Add logo directly without background rectangle
+      doc.addImage(logoDataUrl, 'PNG', logoX, logoY, logoWidth, logoHeight, undefined, 'FAST');
     } else {
+      // Fallback text when no logo is available
+      doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
+      doc.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
+      doc.rect(logoX, logoY, logoWidth, logoHeight, 'FD');
       doc.setTextColor(textDark[0], textDark[1], textDark[2]);
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      doc.text('YOUR LOGO', logoX + logoWidth / 2, logoY + logoHeight / 2 - 2, { align: 'center' });
-      doc.text('HERE', logoX + logoWidth / 2, logoY + logoHeight / 2 + 2, { align: 'center' });
+      doc.text('YOUR LOGO', logoX + logoWidth / 2, logoY + logoHeight / 2, { align: 'center' });
       doc.setFont('helvetica', 'normal');
     }
 
-    // Title
     doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
     doc.setFontSize(24);
     doc.setFont('helvetica', 'bold');
     doc.text('DELIVERY NOTE', pageWidth - margin, logoY + 8, { align: 'right' });
 
-    // Info lines styled like Purchase Order header: Date then QA#, INV#, DLV#
-    const displayDate = parseApiDate(data.delivery_note_created_date || data.created_at);
+    const dateStr = parseApiDate(data.created_at);
     doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    let infoY = logoY + 16;
-    if (displayDate) {
-      doc.text(`DATE: ${displayDate}`, pageWidth - margin, infoY, { align: 'right' });
-      infoY += 6;
-    }
-    if (data.quotation_number) {
-      doc.text(`QUO#: ${data.quotation_number}`, pageWidth - margin, infoY, { align: 'right' });
-      infoY += 6;
-    }
-    if (data.invoice_number) {
-      doc.text(`INV#: ${data.invoice_number}`, pageWidth - margin, infoY, { align: 'right' });
-      infoY += 6;
-    }
-    doc.text(`DLV#: ${data.delivery_note_number}`, pageWidth - margin, infoY, { align: 'right' });
+    let y = logoY + 16;
+    if (dateStr) { doc.text(`DATE: ${dateStr}`, pageWidth - margin, y, { align: 'right' }); y += 6; }
+    if (data.delivery_note_number) { doc.text(`DN#: ${data.delivery_note_number}`, pageWidth - margin, y, { align: 'right' }); }
     doc.setFont('helvetica', 'normal');
   };
 
