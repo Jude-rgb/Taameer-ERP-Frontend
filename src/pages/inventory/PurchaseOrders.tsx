@@ -110,11 +110,14 @@ export const PurchaseOrders = () => {
 
 
   const handleEditPurchaseOrder = (purchaseOrder: PurchaseOrder) => {
+    // Set the purchase order for edit mode
     setSelectedPurchaseOrder(purchaseOrder);
     setIsCreateModalOpen(true);
   };
 
   const handleCreatePurchaseOrder = () => {
+    // Clear any previously selected purchase order to ensure clean create mode
+    setSelectedPurchaseOrder(null);
     setIsCreateModalOpen(true);
   };
 
@@ -536,7 +539,11 @@ export const PurchaseOrders = () => {
 
       <PurchaseOrderDetailsModal
         isOpen={isDetailsModalOpen}
-        onClose={() => setIsDetailsModalOpen(false)}
+        onClose={() => {
+          setIsDetailsModalOpen(false);
+          // Only clear selectedPurchaseOrder if we're not about to open the create/edit modal
+          // This prevents interference between view and create/edit modes
+        }}
         purchaseOrder={selectedPurchaseOrder}
         onEdit={handleDetailsEdit}
         onDelete={handleDetailsDelete}
@@ -578,9 +585,11 @@ export const PurchaseOrders = () => {
 
       {/* Create/Edit Purchase Order Modal */}
       <PurchaseOrderCreateModal
+        key={`${isCreateModalOpen}-${selectedPurchaseOrder?.id || 'create'}`} // Force re-render when mode changes
         isOpen={isCreateModalOpen}
         onClose={() => {
           setIsCreateModalOpen(false);
+          // Always clear the selected purchase order when closing the modal
           setSelectedPurchaseOrder(null);
         }}
         mode={selectedPurchaseOrder ? 'edit' : 'create'}

@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable, { RowInput } from 'jspdf-autotable';
 import api from '@/services/config';
+import { loadImageForPDF } from '../../utils/pdfImageUtils';
 
 export interface DeliveryNoteStock {
   id: number;
@@ -71,35 +72,9 @@ export async function generateDeliveryNotePDF(
     return Number.isNaN(dt.getTime()) ? '' : dt.toLocaleString();
   };
 
-  // Load image URLs as base64 for embedding
-  const loadImageAsDataURL = async (url: string): Promise<string | null> => {
-    try {
-      // Ensure absolute URL, but do NOT prefix API base for app assets (e.g., /saas-uploads/...)
-      let absoluteUrl = url;
-      if (/^https?:/i.test(url)) {
-        absoluteUrl = url;
-      } else if (url.startsWith('/')) {
-        // Use current origin for root-relative assets
-        const origin = typeof window !== 'undefined' ? window.location.origin : '';
-        absoluteUrl = `${origin}${url}`;
-      } else {
-        // Backend-served relative paths like storage/unloading/...
-        absoluteUrl = `${baseUrl}/${url.replace(/^\/+/, '')}`;
-      }
-      const res = await fetch(absoluteUrl);
-      const blob = await res.blob();
-      return await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.readAsDataURL(blob);
-      });
-    } catch {
-      return null;
-    }
-  };
-
+  // Load logo using utility function
   const logoPath = opts.logoPath || '/saas-uploads/Logo-01.png';
-  const logoDataUrl = await loadImageAsDataURL(logoPath);
+  const logoDataUrl = await loadImageForPDF(logoPath);
 
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -129,47 +104,35 @@ export async function generateDeliveryNotePDF(
     const logoY = 10;
     const logoWidth = 45;
     const logoHeight = 18;
-
-    // Logo container
-    doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
-    doc.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
-    doc.rect(logoX, logoY, logoWidth, logoHeight, 'FD');
+    
+    // Draw logo without background rectangle to prevent black background issues
     if (logoDataUrl) {
-      doc.addImage(logoDataUrl, 'PNG', logoX + 2, logoY + 2, logoWidth - 4, logoHeight - 4, undefined, 'FAST');
+      // Add logo as JPEG (converted from PNG for better PDF compatibility)
+      doc.addImage(logoDataUrl, 'JPEG', logoX, logoY, logoWidth, logoHeight, undefined, 'SLOW');
     } else {
+      // Fallback text when no logo is available
+      doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
+      doc.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
+      doc.rect(logoX, logoY, logoWidth, logoHeight, 'FD');
       doc.setTextColor(textDark[0], textDark[1], textDark[2]);
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      doc.text('YOUR LOGO', logoX + logoWidth / 2, logoY + logoHeight / 2 - 2, { align: 'center' });
-      doc.text('HERE', logoX + logoWidth / 2, logoY + logoHeight / 2 + 2, { align: 'center' });
+      doc.text('YOUR LOGO', logoX + logoWidth / 2, logoY + logoHeight / 2, { align: 'center' });
       doc.setFont('helvetica', 'normal');
     }
 
-    // Title
     doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
     doc.setFontSize(24);
     doc.setFont('helvetica', 'bold');
     doc.text('DELIVERY NOTE', pageWidth - margin, logoY + 8, { align: 'right' });
 
-    // Info lines styled like Purchase Order header: Date then QA#, INV#, DLV#
-    const displayDate = parseApiDate(data.delivery_note_created_date || data.created_at);
+    const dateStr = parseApiDate(data.created_at);
     doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    let infoY = logoY + 16;
-    if (displayDate) {
-      doc.text(`DATE: ${displayDate}`, pageWidth - margin, infoY, { align: 'right' });
-      infoY += 6;
-    }
-    if (data.quotation_number) {
-      doc.text(`QUO#: ${data.quotation_number}`, pageWidth - margin, infoY, { align: 'right' });
-      infoY += 6;
-    }
-    if (data.invoice_number) {
-      doc.text(`INV#: ${data.invoice_number}`, pageWidth - margin, infoY, { align: 'right' });
-      infoY += 6;
-    }
-    doc.text(`DLV#: ${data.delivery_note_number}`, pageWidth - margin, infoY, { align: 'right' });
+    let y = logoY + 16;
+    if (dateStr) { doc.text(`DATE: ${dateStr}`, pageWidth - margin, y, { align: 'right' }); y += 6; }
+    if (data.delivery_note_number) { doc.text(`DN#: ${data.delivery_note_number}`, pageWidth - margin, y, { align: 'right' }); }
     doc.setFont('helvetica', 'normal');
   };
 
