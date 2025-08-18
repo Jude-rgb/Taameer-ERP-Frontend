@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf';
+import { loadImageForPDF } from '../../utils/pdfImageUtils';
 import autoTable, { RowInput } from 'jspdf-autotable';
 
 export interface PurchaseOrderDetails {
@@ -86,48 +87,8 @@ export async function generatePurchaseOrderPDF(
   const grandTotal = opts.withVAT ? subTotal + vatTotal : subTotal;
 
   // Load logo
-  const loadImageAsDataURL = async (url: string): Promise<string | null> => {
-    try {
-      // Use public folder for logo assets (served by Vite/frontend)
-      let absoluteUrl = url;
-      if (/^https?:/i.test(url)) {
-        absoluteUrl = url;
-      } else if (url.startsWith('/')) {
-        // Use current origin for public folder assets
-        const origin = typeof window !== 'undefined' ? window.location.origin : '';
-        absoluteUrl = `${origin}${url}`;
-      } else {
-        // Relative paths - prepend with current origin
-        const origin = typeof window !== 'undefined' ? window.location.origin : '';
-        absoluteUrl = `${origin}/${url}`;
-      }
-      
-      const res = await fetch(absoluteUrl);
-      if (!res.ok) {
-        throw new Error(`Failed to fetch image: ${res.status}`);
-      }
-      
-      const blob = await res.blob();
-      
-      // Ensure we're handling PNG properly
-      if (blob.type !== 'image/png' && blob.type !== 'image/jpeg') {
-        console.warn('Image type not optimal for PDF:', blob.type);
-      }
-      
-      return await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = () => reject(new Error('Failed to read image file'));
-        reader.readAsDataURL(blob);
-      });
-    } catch (error) {
-      console.error('Error loading image:', error);
-      return null;
-    }
-  };
-
   const logoPath = opts.logoPath || '/saas-uploads/Logo-01.png';
-  const logoDataUrl = await loadImageAsDataURL(logoPath);
+  const logoDataUrl = await loadImageForPDF(logoPath);
 
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -165,8 +126,8 @@ export async function generatePurchaseOrderPDF(
     
     // Draw logo without background rectangle to prevent black background issues
     if (logoDataUrl) {
-      // Add logo with proper transparency handling
-      doc.addImage(logoDataUrl, 'PNG', logoX, logoY, logoWidth, logoHeight, undefined, 'NONE');
+      // Add logo as JPEG (converted from PNG for better PDF compatibility)
+      doc.addImage(logoDataUrl, 'JPEG', logoX, logoY, logoWidth, logoHeight, undefined, 'SLOW');
     } else {
       // Fallback text when no logo is available
       doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);

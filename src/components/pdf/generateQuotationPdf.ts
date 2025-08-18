@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable, { RowInput } from 'jspdf-autotable';
+import { loadImageForPDF } from '../../utils/pdfImageUtils';
 
 export interface QuotationStockItem {
   id: number;
@@ -88,46 +89,7 @@ export async function generateQuotationPDF(
 
   // Load logo
   const logoPath = opts.logoPath || '/saas-uploads/Logo-01.png';
-  const loadImageAsDataURL = async (url: string): Promise<string | null> => {
-    try {
-      // Use public folder for logo assets (served by Vite/frontend)
-      let absoluteUrl = url;
-      if (/^https?:/i.test(url)) {
-        absoluteUrl = url;
-      } else if (url.startsWith('/')) {
-        // Use current origin for public folder assets
-        const origin = typeof window !== 'undefined' ? window.location.origin : '';
-        absoluteUrl = `${origin}${url}`;
-      } else {
-        // Relative paths - prepend with current origin
-        const origin = typeof window !== 'undefined' ? window.location.origin : '';
-        absoluteUrl = `${origin}/${url}`;
-      }
-      
-      const res = await fetch(absoluteUrl);
-      if (!res.ok) {
-        throw new Error(`Failed to fetch image: ${res.status}`);
-      }
-      
-      const blob = await res.blob();
-      
-      // Ensure we're handling PNG properly
-      if (blob.type !== 'image/png' && blob.type !== 'image/jpeg') {
-        console.warn('Image type not optimal for PDF:', blob.type);
-      }
-      
-      return await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = () => reject(new Error('Failed to read image file'));
-        reader.readAsDataURL(blob);
-      });
-    } catch (error) {
-      console.error('Error loading image:', error);
-      return null;
-    }
-  };
-  const logoDataUrl = await loadImageAsDataURL(logoPath);
+  const logoDataUrl = await loadImageForPDF(logoPath);
 
   const drawPageNumber = (pageNumber: number) => {
     doc.setTextColor(text[0], text[1], text[2]);
@@ -191,8 +153,8 @@ export async function generateQuotationPDF(
     
     // Draw logo without background rectangle to prevent black background issues
     if (logoDataUrl) {
-      // Add logo with proper transparency handling
-      doc.addImage(logoDataUrl, 'PNG', logoX, logoY, logoW, logoH, undefined, 'NONE');
+      // Add logo as JPEG (converted from PNG for better PDF compatibility)
+      doc.addImage(logoDataUrl, 'JPEG', logoX, logoY, logoW, logoH, undefined, 'SLOW');
     } else {
       // Fallback text when no logo is available
       doc.setDrawColor(border[0], border[1], border[2]);
