@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable, { RowInput } from 'jspdf-autotable';
+import { loadImageForPDF } from '../../utils/pdfImageUtils';
 
 export interface QuotationStockItem {
   id: number;
@@ -86,6 +87,10 @@ export async function generateQuotationPDF(
   const discountColor: [number, number, number] = [220, 38, 38]; // red
   const deliveryColor: [number, number, number] = [41, 128, 185]; // blue
 
+  // Load logo
+  const logoPath = opts.logoPath || '/saas-uploads/Logo-01.png';
+  const logoDataUrl = await loadImageForPDF(logoPath);
+
   const drawPageNumber = (pageNumber: number) => {
     doc.setTextColor(text[0], text[1], text[2]);
     doc.setFontSize(10);
@@ -94,33 +99,19 @@ export async function generateQuotationPDF(
     doc.setFont('helvetica', 'normal');
   };
 
-  const logoPath = opts.logoPath || '/saas-uploads/Logo-01.png';
-  const loadImageAsDataURL = async (url: string): Promise<string | null> => {
-    try {
-      const res = await fetch(url);
-      const blob = await res.blob();
-      return await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.readAsDataURL(blob);
-      });
-    } catch {
-      return null;
-    }
-  };
-
   const drawCompanyAndCustomer = (startY: number) => {
     let y = startY;
-    // Company left
+    
+    // Company info section
     doc.setTextColor(text[0], text[1], text[2]);
+    doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
     doc.text('AL DAR CONSTRUCTION', margin, y + 5);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.text('(TAAMEER CONSTRUCTION MATERIALS)', margin, y + 10);
     doc.text('Oman, Muscat Grand Mall', margin, y + 15);
-    doc.text('00968 93655315', margin, y + 20);
+    doc.text('CR: 1119792', margin, y + 20);
     doc.text('taameer@gethor.com', margin, y + 25);
 
     // Customer right
@@ -153,19 +144,29 @@ export async function generateQuotationPDF(
     const rightBottom = boxY + detailsHeight;
     return Math.max(leftBottom, rightBottom);
   };
-  const logoDataUrl = await loadImageAsDataURL(logoPath);
 
   const drawHeader = () => {
     const logoX = margin;
     const logoY = 10;
     const logoW = 45;
     const logoH = 18;
-    doc.setDrawColor(border[0], border[1], border[2]);
-    doc.setFillColor(light[0], light[1], light[2]);
-    doc.rect(logoX, logoY, logoW, logoH, 'FD');
+    
+    // Draw logo without background rectangle to prevent black background issues
     if (logoDataUrl) {
-      doc.addImage(logoDataUrl, 'PNG', logoX + 2, logoY + 2, logoW - 4, logoH - 4, undefined, 'FAST');
+      // Add logo as JPEG (converted from PNG for better PDF compatibility)
+      doc.addImage(logoDataUrl, 'JPEG', logoX, logoY, logoW, logoH, undefined, 'SLOW');
+    } else {
+      // Fallback text when no logo is available
+      doc.setDrawColor(border[0], border[1], border[2]);
+      doc.setFillColor(light[0], light[1], light[2]);
+      doc.rect(logoX, logoY, logoW, logoH, 'FD');
+      doc.setTextColor(text[0], text[1], text[2]);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('YOUR LOGO', logoX + logoW / 2, logoY + logoH / 2, { align: 'center' });
+      doc.setFont('helvetica', 'normal');
     }
+    
     // Title
     doc.setTextColor(primary[0], primary[1], primary[2]);
     doc.setFontSize(24);

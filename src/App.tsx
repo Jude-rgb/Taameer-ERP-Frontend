@@ -16,8 +16,10 @@ import { Reports } from "./pages/Reports";
 import { UserManagement } from "./pages/UserManagement";
 import { SystemSettings } from "./pages/SystemSettings";
 import { Suppliers } from "./pages/Suppliers";
+import { Documentation } from "./pages/Documentation";
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { AdminOnlyRoute } from "./components/auth/AdminOnlyRoute";
 import { useAuthStore } from '@/store/useAuthStore';
 import { canAccessModule, normalizeRole, MODULES } from '@/lib/rbac';
 
@@ -51,8 +53,9 @@ const App = () => (
           <Route path="customers" element={<RoleAware><Customers /></RoleAware>} />
           <Route path="suppliers" element={<RoleAware><Suppliers /></RoleAware>} />
           <Route path="reports" element={<RoleAware><Reports /></RoleAware>} />
-          <Route path="users" element={<RoleAware><UserManagement /></RoleAware>} />
-          <Route path="settings" element={<RoleAware><SystemSettings /></RoleAware>} />
+          <Route path="documentation" element={<AdminOnlyRoute><Documentation /></AdminOnlyRoute>} />
+          <Route path="users" element={<AdminOnlyRoute><UserManagement /></AdminOnlyRoute>} />
+          <Route path="settings" element={<AdminOnlyRoute><SystemSettings /></AdminOnlyRoute>} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

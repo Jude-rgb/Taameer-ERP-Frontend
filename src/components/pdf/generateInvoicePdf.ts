@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable, { RowInput } from 'jspdf-autotable';
+import { loadImageForPDF } from '../../utils/pdfImageUtils';
 
 export interface InvoiceStockItem {
   id: number;
@@ -81,20 +82,7 @@ export async function generateInvoicePDF(
   };
 
   const logoPath = opts.logoPath || '/saas-uploads/Logo-01.png';
-  const loadImageAsDataURL = async (url: string): Promise<string | null> => {
-    try {
-      const res = await fetch(url);
-      const blob = await res.blob();
-      return await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.readAsDataURL(blob);
-      });
-    } catch {
-      return null;
-    }
-  };
-  const logoDataUrl = await loadImageAsDataURL(logoPath);
+  const logoDataUrl = await loadImageForPDF(logoPath);
 
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -125,13 +113,16 @@ export async function generateInvoicePDF(
     const logoY = 10;
     const logoWidth = 45;
     const logoHeight = 18;
-
-    doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
-    doc.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
-    doc.rect(logoX, logoY, logoWidth, logoHeight, 'FD');
+    
+    // Draw logo without background rectangle to prevent black background issues
     if (logoDataUrl) {
-      doc.addImage(logoDataUrl, 'PNG', logoX + 2, logoY + 2, logoWidth - 4, logoHeight - 4, undefined, 'FAST');
+      // Add logo as JPEG (converted from PNG for better PDF compatibility)
+      doc.addImage(logoDataUrl, 'JPEG', logoX, logoY, logoWidth, logoHeight, undefined, 'SLOW');
     } else {
+      // Fallback text when no logo is available
+      doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
+      doc.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
+      doc.rect(logoX, logoY, logoWidth, logoHeight, 'FD');
       doc.setTextColor(textDark[0], textDark[1], textDark[2]);
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
@@ -140,13 +131,11 @@ export async function generateInvoicePDF(
       doc.setFont('helvetica', 'normal');
     }
 
-    // Title
     doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
     doc.setFontSize(24);
     doc.setFont('helvetica', 'bold');
     doc.text('INVOICE', pageWidth - margin, logoY + 8, { align: 'right' });
 
-    // Info lines
     const dateStr = parseApiDate(data.created_at);
     doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
     doc.setFontSize(12);

@@ -233,6 +233,23 @@ export const Login = () => {
                 )}
               </Button>
             </form>
+
+            {/* Powered by Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.5 }}
+              className="text-center "
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <span className="text-sm text-muted-foreground font-normal">Powered by</span>
+                <img 
+                  src="/saas-uploads/pixel-logo.png" 
+                  alt="Powered by Logo" 
+                  className="h-14 w-auto opacity-80 hover:opacity-100 transition-opacity"
+                />
+              </div>
+            </motion.div>
           </div>
         </motion.div>
       </div>

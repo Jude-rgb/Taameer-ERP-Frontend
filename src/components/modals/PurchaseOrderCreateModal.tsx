@@ -62,6 +62,7 @@ interface FormData {
   purchaseDate: string;
   quotation_ref: string;
   currency: string;
+  status: string;
   products: PurchaseOrderProduct[];
   note: string;
 }
@@ -71,6 +72,7 @@ interface FormErrors {
   purchaseDate?: string;
   quotation_ref?: string;
   currency?: string;
+  status?: string;
   products?: string;
 }
 
@@ -88,6 +90,12 @@ const CURRENCY_OPTIONS = [
   { value: 'USD', label: 'USD - US Dollar' },
   { value: 'CNY', label: 'CNY - Chinese Yuan' },
   { value: 'TRY', label: 'TRY - Turkish Lira' }
+];
+
+const PURCHASE_STATUS_OPTIONS = [
+  { value: 'Pending', label: 'Pending' },
+  { value: 'Ordered', label: 'Ordered' },
+  { value: 'Received', label: 'Received' }
 ];
 
 const VAT_RATE = 5.000; // Fixed 5% VAT
@@ -124,6 +132,7 @@ export const PurchaseOrderCreateModal = ({
     purchaseDate: new Date().toISOString().split('T')[0],
     quotation_ref: '',
     currency: 'OMR',
+    status: 'Pending',
     products: [],
     note: ''
   });
@@ -153,6 +162,58 @@ export const PurchaseOrderCreateModal = ({
   const [selectedProductIndex, setSelectedProductIndex] = useState(-1);
   const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
 
+  // Load suppliers and products on modal open
+  useEffect(() => {
+    if (isOpen) {
+      // Always start fresh when opening
+      resetFormToInitial();
+
+      loadSuppliers();
+      loadProducts();
+      
+      // Only load purchase order details if we're in edit mode AND have a valid purchase order
+      if (mode === 'edit' && purchaseOrder?.id) {
+        loadPurchaseOrderDetails();
+      }
+    }
+  }, [isOpen, mode, purchaseOrder?.id]); // Changed dependency to purchaseOrder?.id instead of purchaseOrder
+
+  // Reset form when mode changes
+  useEffect(() => {
+    if (isOpen) {
+      if (mode === 'create') {
+        // Ensure clean state for create mode - ignore any purchaseOrder data
+        resetFormToInitial();
+        // Force clear any existing purchase order data
+        setFormData(getInitialFormData());
+      }
+
+    }
+  }, [mode, isOpen]);
+
+  // Cleanup effect when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      // Reset form when modal closes
+      resetFormToInitial();
+    }
+  }, [isOpen]);
+
+  // Additional safety check - ensure create mode never has purchase order data
+  useEffect(() => {
+    if (isOpen && mode === 'create') {
+      // Double-check that we're in clean state for create mode
+      const currentFormData = getInitialFormData();
+      setFormData(currentFormData);
+      setErrors({});
+      setProductEntry({ name: '', code: '', quantity: '', price: '' });
+      setShowProductSuggestions(false);
+      setFilteredProducts([]);
+      setSelectedProductIndex(-1);
+      setIsProductDropdownOpen(false);
+    }
+  }, [isOpen, mode]);
+
   const resetFormToInitial = () => {
     setFormData(getInitialFormData());
     setErrors({});
@@ -163,26 +224,9 @@ export const PurchaseOrderCreateModal = ({
     setIsProductDropdownOpen(false);
   };
 
-  // Load suppliers and products on modal open
-  useEffect(() => {
-    if (isOpen) {
-      // Always start fresh when opening
-      resetFormToInitial();
-
-      loadSuppliers();
-      loadProducts();
-      
-      if (mode === 'edit' && purchaseOrder) {
-        loadPurchaseOrderDetails();
-      } else {
-        // Ensure clean state for create mode
-        setFormData(getInitialFormData());
-      }
-    }
-  }, [isOpen, mode, purchaseOrder]);
-
   const loadPurchaseOrderDetails = async () => {
-    if (!purchaseOrder?.id) return;
+    // Safety check - only load details in edit mode
+    if (mode !== 'edit' || !purchaseOrder?.id) return;
     
     try {
       const response = await getPurchaseOrderDetails(purchaseOrder.id);
@@ -202,6 +246,7 @@ export const PurchaseOrderCreateModal = ({
           purchaseDate: details.purchase_date || new Date().toISOString().split('T')[0],
           quotation_ref: details.quotation_ref || '',
           currency: details.currency_type || 'OMR',
+          status: details.status || 'Pending',
           products: transformedProducts,
           note: details.note || ''
         });
@@ -429,6 +474,10 @@ export const PurchaseOrderCreateModal = ({
       newErrors.currency = 'Currency is required';
     }
 
+    if (!formData.status) {
+      newErrors.status = 'Purchase status is required';
+    }
+
     if (formData.products.length === 0) {
       newErrors.products = 'At least one product is required';
     }
@@ -472,6 +521,7 @@ export const PurchaseOrderCreateModal = ({
         purchaseDate: formData.purchaseDate,
         quotation_ref: formData.quotation_ref,
         currency: formData.currency,
+        status: formData.status,
         subTotal: parseFloat(subtotal.toFixed(3)),
         vatAmount: parseFloat(vatAmount.toFixed(3)),
         grandTotal: parseFloat(grandTotal.toFixed(3)),
@@ -479,8 +529,7 @@ export const PurchaseOrderCreateModal = ({
         products: formData.products,
         full_name,
         user_id,
-        note: formData.note,
-        status: "Ordered"
+        note: formData.note
       };
 
       const result = await createPurchaseOrder(payload);
@@ -507,7 +556,25 @@ export const PurchaseOrderCreateModal = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) { resetFormToInitial(); onClose(); } }}>
+    <Dialog 
+      key={`${mode}-${isOpen}`} // Force re-render when mode changes
+      open={isOpen} 
+      onOpenChange={(open) => { 
+        if (!open) { 
+          // Aggressive cleanup when modal closes
+          resetFormToInitial();
+          // Force clear all state
+          setFormData(getInitialFormData());
+          setErrors({});
+          setProductEntry({ name: '', code: '', quantity: '', price: '' });
+          setShowProductSuggestions(false);
+          setFilteredProducts([]);
+          setSelectedProductIndex(-1);
+          setIsProductDropdownOpen(false);
+          onClose(); 
+        } 
+      }}
+    >
       <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto">
         <DialogHeader className="border-b pb-4">
           <DialogTitle className="flex items-center gap-2 text-2xl">
@@ -557,22 +624,6 @@ export const PurchaseOrderCreateModal = ({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="purchaseDate">Purchase Date *</Label>
-                  <Input
-                    id="purchaseDate"
-                    type="date"
-                    value={formData.purchaseDate}
-                    onChange={(e) => handleInputChange('purchaseDate', e.target.value)}
-                    className={errors.purchaseDate ? 'border-red-500' : ''}
-                  />
-                  {errors.purchaseDate && (
-                    <p className="text-sm text-red-500">{errors.purchaseDate}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
                   <Label htmlFor="quotation_ref">Quotation Reference *</Label>
                   <Input
                     id="quotation_ref"
@@ -585,7 +636,9 @@ export const PurchaseOrderCreateModal = ({
                     <p className="text-sm text-red-500">{errors.quotation_ref}</p>
                   )}
                 </div>
+              </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="currency">Currency *</Label>
                   <Select
@@ -605,6 +658,44 @@ export const PurchaseOrderCreateModal = ({
                   </Select>
                   {errors.currency && (
                     <p className="text-sm text-red-500">{errors.currency}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="status">Purchase Status *</Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(value) => handleInputChange('status', value)}
+                  >
+                    <SelectTrigger className={errors.status ? 'border-red-500' : ''}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PURCHASE_STATUS_OPTIONS.map((status) => (
+                        <SelectItem key={status.value} value={status.value}>
+                          {status.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.status && (
+                    <p className="text-sm text-red-500">{errors.status}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="purchaseDate">Purchase Date *</Label>
+                  <Input
+                    id="purchaseDate"
+                    type="date"
+                    value={formData.purchaseDate}
+                    onChange={(e) => handleInputChange('purchaseDate', e.target.value)}
+                    className={errors.purchaseDate ? 'border-red-500' : ''}
+                  />
+                  {errors.purchaseDate && (
+                    <p className="text-sm text-red-500">{errors.purchaseDate}</p>
                   )}
                 </div>
               </div>
@@ -886,3 +977,4 @@ export const PurchaseOrderCreateModal = ({
     </Dialog>
   );
 };
+

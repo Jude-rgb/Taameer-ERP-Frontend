@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable, { RowInput } from 'jspdf-autotable';
+import { loadImageForPDF } from '../../utils/pdfImageUtils';
 
 interface InvoicePaymentRow {
   id?: number | string;
@@ -81,20 +82,7 @@ export async function generateSubInvoicePDF(
 
   // Load logo
   const logoPath = opts.logoPath || '/saas-uploads/Logo-01.png';
-  const loadImageAsDataURL = async (url: string): Promise<string | null> => {
-    try {
-      const res = await fetch(url);
-      const blob = await res.blob();
-      return await new Promise(resolve => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.readAsDataURL(blob);
-      });
-    } catch {
-      return null;
-    }
-  };
-  const logoDataUrl = await loadImageAsDataURL(logoPath);
+  const logoDataUrl = await loadImageForPDF(logoPath);
 
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -120,10 +108,23 @@ export async function generateSubInvoicePDF(
 
   const drawHeader = () => {
     const logoX = margin, logoY = 10, logoWidth = 45, logoHeight = 18;
-    doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
-    doc.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
-    doc.rect(logoX, logoY, logoWidth, logoHeight, 'FD');
-    if (logoDataUrl) doc.addImage(logoDataUrl, 'PNG', logoX + 2, logoY + 2, logoWidth - 4, logoHeight - 4, undefined, 'FAST');
+    
+    // Draw logo without background rectangle to prevent black background issues
+    if (logoDataUrl) {
+      // Add logo as JPEG (converted from PNG for better PDF compatibility)
+      doc.addImage(logoDataUrl, 'JPEG', logoX, logoY, logoWidth, logoHeight, undefined, 'SLOW');
+    } else {
+      // Fallback text when no logo is available
+      doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
+      doc.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
+      doc.rect(logoX, logoY, logoWidth, logoHeight, 'FD');
+      doc.setTextColor(textDark[0], textDark[1], textDark[2]);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('YOUR LOGO', logoX + logoWidth / 2, logoY + logoHeight / 2, { align: 'center' });
+      doc.setFont('helvetica', 'normal');
+    }
+    
     doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
     doc.setFontSize(24);
     doc.setFont('helvetica', 'bold');

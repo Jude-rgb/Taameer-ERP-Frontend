@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Package, FileText, Receipt, Truck, Users, BarChart3, Settings, ShoppingCart, ClipboardList, ChevronDown, Building2, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Package, FileText, Receipt, Truck, Users, BarChart3, Settings, ShoppingCart, ClipboardList, ChevronDown, Building2, Menu, X, BookOpen } from 'lucide-react';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, useSidebar, SidebarHeader, SidebarTrigger } from '@/components/ui/sidebar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
@@ -56,13 +56,20 @@ const menuItems = [{
   url: '/reports',
   icon: BarChart3
 }, {
+  title: 'Documentation',
+  url: '/documentation',
+  icon: BookOpen,
+  adminOnly: true
+}, {
   title: 'User Management',
   url: '/users',
-  icon: Users
+  icon: Users,
+  adminOnly: true
 }, {
   title: 'System Setup',
   url: '/settings',
-  icon: Settings
+  icon: Settings,
+  adminOnly: true
 }];
 export function AppSidebar() {
   const { state, open, setOpen } = useSidebar();
@@ -134,6 +141,11 @@ export function AppSidebar() {
               <SidebarMenu className="space-y-1">
                 {menuItems
                   .filter((item) => {
+                    // Check if item is admin-only
+                    if ((item as any).adminOnly && role !== 'ADMIN') {
+                      return false;
+                    }
+                    
                     if ('items' in item && Array.isArray((item as any).items)) {
                       const anyVisible = (item as any).items.some((sub: any) => {
                         const mid = pathToModuleId(sub.url || '/');

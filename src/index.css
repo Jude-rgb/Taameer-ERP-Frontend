@@ -49,7 +49,7 @@
     --info-foreground: 0 0% 100%;
 
     /* Border & Input Colors */
-    --border: 220 13% 91%; /* #e5e7eb */
+    --border: 220 13% 80%; /* #d1d5db - More visible borders */
     --input: 0 0% 100%;
     --ring: 27 100% 49%; /* #fa8900 */
 
@@ -60,7 +60,7 @@
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 27 100% 49% / 0.1;
     --sidebar-accent-foreground: 220 13% 9%;
-    --sidebar-border: 220 13% 91%;
+    --sidebar-border: 220 13% 80%; /* More visible sidebar borders */
     --sidebar-ring: 27 100% 49%;
 
     /* Design Tokens */
@@ -85,7 +85,7 @@
 
     /* Professional effects */
     --glass-background: hsl(0 0% 100% / 0.95);
-    --glass-border: hsl(220 13% 91% / 0.8);
+    --glass-border: hsl(220 13% 75% / 0.8); /* More visible glass borders */
     --glass-shadow: 0 4px 12px hsl(0 0% 0% / 0.1);
 
     /* Professional shadows */
@@ -105,15 +105,15 @@
 
   .dark {
     /* Core Background Colors - Professional Dark Mode */
-    --background: 220 13% 9%; /* #111827 */
+    --background: 220 13% 8%; /* #0f172a - Darker background */
     --foreground: 220 14% 98%; /* #f9fafb */
 
     /* Card & Surface Colors */
-    --card: 220 13% 12%; /* #1f2937 */
+    --card: 220 13% 15%; /* #1e293b - Lighter cards for better separation */
     --card-foreground: 220 14% 98%; /* #f9fafb */
 
     /* Popover Colors */
-    --popover: 220 13% 12%;
+    --popover: 220 13% 18%; /* #1e293b - Match card color scheme */
     --popover-foreground: 220 14% 98%;
 
     /* Brand Colors - Slightly Lighter for Dark Mode */
@@ -123,17 +123,17 @@
     --primary-glow: 27 100% 60%;
 
     /* Secondary Colors - Professional Dark Gray */
-    --secondary: 220 13% 18%;
-    --secondary-hover: 220 13% 23%;
+    --secondary: 220 13% 22%; /* #374151 - Lighter secondary surfaces */
+    --secondary-hover: 220 13% 28%; /* #475569 - Better hover contrast */
     --secondary-foreground: 220 14% 98%;
 
     /* Muted Colors */
-    --muted: 220 13% 18%; /* #374151 */
-    --muted-foreground: 220 14% 82%; /* #d1d5db */
+    --muted: 220 13% 25%; /* #475569 - More visible muted backgrounds */
+    --muted-foreground: 220 14% 85%; /* #e2e8f0 - Better text contrast */
 
     /* Accent Colors */
-    --accent: 220 13% 18%;
-    --accent-hover: 220 13% 23%;
+    --accent: 220 13% 22%; /* #374151 - Consistent with secondary */
+    --accent-hover: 220 13% 28%; /* #475569 - Better hover visibility */
     --accent-foreground: 220 14% 98%;
 
     /* Status Colors - High Contrast Dark Mode */
@@ -147,23 +147,23 @@
     --info-foreground: 0 0% 100%;
 
     /* Border & Input Colors */
-    --border: 220 13% 23%; /* #374151 */
-    --input: 220 13% 18%;
+    --border: 220 13% 30%; /* #475569 - More visible borders */
+    --input: 220 13% 20%; /* #334155 - Slightly lighter input backgrounds */
     --ring: 27 100% 49%; /* #fa8900 */
 
     /* Dark mode effects */
-    --glass-background: hsl(220 13% 12% / 0.95);
-    --glass-border: hsl(220 13% 23% / 0.8);
+    --glass-background: hsl(220 13% 15% / 0.95); /* Match card backgrounds */
+    --glass-border: hsl(220 13% 30% / 0.8); /* More visible glass borders */
     --glass-shadow: 0 4px 12px hsl(0 0% 0% / 0.25);
 
     /* Professional Dark Sidebar */
-    --sidebar-background: 220 13% 12%;
+    --sidebar-background: 220 13% 15%; /* Match card color */
     --sidebar-foreground: 220 14% 98%;
     --sidebar-primary: 27 100% 49%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 27 100% 49% / 0.15;
     --sidebar-accent-foreground: 220 14% 98%;
-    --sidebar-border: 220 13% 23%;
+    --sidebar-border: 220 13% 30%; /* More visible sidebar borders */
     --sidebar-ring: 27 100% 49%;
 
     /* Dark Mode Gradients */
@@ -174,7 +174,7 @@
     --gradient-blue: linear-gradient(135deg, hsl(217 91% 60%), hsl(217 85% 65%));
     --gradient-teal: linear-gradient(135deg, hsl(175 100% 40%), hsl(175 95% 45%));
     --gradient-pink: linear-gradient(135deg, hsl(340 100% 60%), hsl(340 95% 65%));
-    --gradient-card: linear-gradient(135deg, hsl(220 13% 12%), hsl(220 13% 15%));
+    --gradient-card: linear-gradient(135deg, hsl(220 13% 15%), hsl(220 13% 18%)); /* Better card gradients */
     --shadow-glow: 0 0 0 1px hsl(27 100% 49% / 0.5);
     --shadow-elegant: 0 10px 30px -10px hsl(27 100% 49% / 0.4);
   }
@@ -243,6 +243,37 @@
   
   .status-info {
     @apply bg-info text-info-foreground;
+  }
+
+  /* Better border visibility */
+  .border-visible {
+    @apply border-gray-300 dark:border-slate-600;
+  }
+  
+  .border-visible-light {
+    @apply border-gray-200 dark:border-slate-700;
+  }
+  
+  .border-visible-strong {
+    @apply border-gray-400 dark:border-slate-500;
+  }
+
+  /* Dark mode specific card styles */
+  .card-dark {
+    @apply bg-card border-border shadow-lg;
+  }
+  
+  .card-dark-elevated {
+    @apply bg-card border-border shadow-xl ring-1 ring-border/10;
+  }
+  
+  /* Dark mode surface variants */
+  .surface-dark {
+    @apply bg-secondary/50 border-border/50;
+  }
+  
+  .surface-dark-muted {
+    @apply bg-muted/20 border-muted/40;
   }
 
   /* Mobile-first responsive containers */
