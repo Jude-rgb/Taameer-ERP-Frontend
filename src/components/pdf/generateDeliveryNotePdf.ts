@@ -74,18 +74,23 @@ export async function generateDeliveryNotePDF(
   // Load image URLs as base64 for embedding
   const loadImageAsDataURL = async (url: string): Promise<string | null> => {
     try {
-      // Ensure absolute URL, but do NOT prefix API base for app assets (e.g., /saas-uploads/...)
+      // Get API base URL for asset resolution
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://taameerv2staging.gethorcrm.com/';
+      
       let absoluteUrl = url;
       if (/^https?:/i.test(url)) {
         absoluteUrl = url;
+      } else if (url.startsWith('/saas-uploads/') || url.startsWith('saas-uploads/')) {
+        // Use API base URL for saas-uploads assets
+        const cleanUrl = url.replace(/^\/+/, '');
+        absoluteUrl = `${apiBaseUrl.replace(/\/$/, '')}/${cleanUrl}`;
       } else if (url.startsWith('/')) {
-        // Use current origin for root-relative assets
+        // Use current origin for other root-relative assets  
         const origin = typeof window !== 'undefined' ? window.location.origin : '';
         absoluteUrl = `${origin}${url}`;
       } else {
         // Backend-served relative paths like storage/unloading/...
-        const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-        absoluteUrl = `${baseUrl}/${url.replace(/^\/+/, '')}`;
+        absoluteUrl = `${apiBaseUrl.replace(/\/$/, '')}/${url.replace(/^\/+/, '')}`;
       }
       
       const res = await fetch(absoluteUrl);
