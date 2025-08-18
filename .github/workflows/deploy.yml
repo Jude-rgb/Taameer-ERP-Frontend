@@ -70,8 +70,17 @@ jobs:
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
+          
+          # Clean up any modified files from npm install
+          git reset --hard HEAD
+          git clean -fd
+          
+          # Ensure we're on a clean main branch
           git checkout main
-          git merge production --no-ff --commit -m "Merge production into main [skip ci]"
+          git pull origin main
+          
+          # Now merge production into main
+          git merge production --no-ff -m "Merge production into main [skip ci]"
           git push origin main
 
       # 🔹 Auto-bump version & tag (semantic)
